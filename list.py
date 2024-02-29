@@ -402,7 +402,7 @@ class Ui_MainWindow(object):
 
     def new_day(self, result):
         now = datetime.today()
-        if result['end'] < now:
+        if result['end'] < now and result['is_finish'] < 1:
             result['begin'] = result['end']
             if result['cycle']['cyclicality'] == 3:
                 result['end'] = result['begin'] + relativedelta(years=1)
