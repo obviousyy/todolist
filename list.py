@@ -310,6 +310,7 @@ class Ui_MainWindow(object):
                 priority = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})['priority']
                 self.set_priority(node, priority)
                 # mysql.set_priority(id, 0)
+                todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                 parent = node.parent()
                 if parent != self.root:
                     self.set_state(parent)
@@ -319,6 +320,7 @@ class Ui_MainWindow(object):
                         priority = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})['priority']
                         self.set_priority(parent, priority)
                         # mysql.set_priority(id, 0)
+                        todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                         self.treeWidget.blockSignals(True)
                         parent.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
                         self.treeWidget.blockSignals(False)
