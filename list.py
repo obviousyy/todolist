@@ -23,25 +23,20 @@ todolist = mongodb.MongoDBPool.get_mongodb_pool()
 
 class CustomTreeWidgetItem(QTreeWidgetItem):
     def __lt__(self, other):
-        column = self.treeWidget().sortColumn()
-        value1 = self.text(column)
-        value2 = other.text(column)
-        if column == 3:
+        value1 = self.text(3)
+        value2 = other.text(3)
+        order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '一定要记得……': 4, '急急急': 5, '已完成': 0}
+        if order[value1] == order[value2]:
+            value1 = self.text(2)
+            value2 = other.text(2)
             if value1 == value2:
-                return self.text(1) > other.text(1)
+                value1 = self.text(1)
+                value2 = other.text(1)
+                return value1 < value2
             else:
-                order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '一定要记得……': 4, '急急急': 5, '已完成': 0}
-                return order[value1] < order[value2]
-        elif column == 1:
-            if value1 == value2:
-                order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '一定要记得……': 4, '急急急': 5, '已完成': 0}
-                value1 = self.text(2)
-                value2 = other.text(2)
-                return order[value1] > order[value2]
-            else:
-                return self.text(1) < other.text(1)
+                return value1 < value2
         else:
-            return self.text(column) < other.text(column)
+            return order[value1] < order[value2]
 
 
 class Ui_MainWindow(object):
@@ -79,7 +74,7 @@ class Ui_MainWindow(object):
         self.treeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeWidget.customContextMenuRequested.connect(self.show_menu)
         self.treeWidget.expandItem(item_0)  # 展开添加的节点
-        # self.treeWidget.setSortingEnabled(True)
+        self.treeWidget.setSortingEnabled(True)
         self.horizontalLayout.addWidget(self.treeWidget)
         self.treeWidget.itemChanged.connect(self.check)
 
@@ -95,7 +90,7 @@ class Ui_MainWindow(object):
         roots = todolist.find({'parent_task': None})
         for i in roots:
             self.create_node(i, self.root)
-        self.treeWidget.sortItems(2, Qt.DescendingOrder)
+        self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def create_node(self, i, root):
         node = CustomTreeWidgetItem(root)
