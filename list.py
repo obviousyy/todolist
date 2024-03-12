@@ -34,7 +34,7 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
                 value2 = other.text(1)
                 return value1 < value2
             else:
-                return value1 < value2
+                return value1 > value2
         else:
             return order[value1] < order[value2]
 
