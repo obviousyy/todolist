@@ -129,10 +129,8 @@ class Ui_MainWindow(object):
             if son_num != len(son):
                 self.treeWidget.expandItem(node)
         else:
-            if i['is_finish'] == 1:
+            if i['is_finish'] >= 0:
                 self.finish_node(str(i['_id']))
-            elif i['is_finish'] == 0:
-                node.setCheckState(0, Qt.PartiallyChecked)
             elif i['is_finish'] == -1:
                 node.setCheckState(0, Qt.Unchecked)
         return node.checkState(0)
@@ -154,6 +152,9 @@ class Ui_MainWindow(object):
         if item != self.root:
             action = menu.addAction('删除任务')
             action.triggered.connect(self.delete_node)
+            if result['cycle']['type'] >= 0:
+                action = menu.addAction('取消完成一次')
+                action.triggered.connect(self.un_finish_once)
         menu.exec_(QCursor.pos())
 
     def set_item(self, dic):
@@ -385,14 +386,10 @@ class Ui_MainWindow(object):
                     self.finish_node(id)
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-                    self.treeWidget.blockSignals(True)
-                    node.setCheckState(0, Qt.PartiallyChecked)
-                    self.treeWidget.blockSignals(False)
+                    self.finish_node(id)
         else:
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-            self.treeWidget.blockSignals(True)
-            node.setCheckState(0, Qt.PartiallyChecked)
-            self.treeWidget.blockSignals(False)
+            self.finish_node(id)
         todolist.update_one({'_id': ObjectId(id)}, {'$inc': {'cycle.finish_times': 1}})
 
     def new_day(self, result):
@@ -417,3 +414,18 @@ class Ui_MainWindow(object):
             result['is_finish'] = -1
         todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
         return result
+
+    def un_finish_once(self):
+        node = self.treeWidget.currentItem()
+        id = self.get_id(node)
+        todolist.update_one({'_id': ObjectId(id), 'cycle.finish_times': {"$gt": 0}}, {'$inc': {'cycle.finish_times': -1}})
+        new = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})
+        self.set_priority(node, new['priority'])
+        todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
+        self.treeWidget.blockSignals(True)
+        node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
+        node.setCheckState(0, Qt.Unchecked)
+        self.treeWidget.blockSignals(False)
+        node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
+        node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
+        node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
