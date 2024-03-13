@@ -268,25 +268,26 @@ class Ui_MainWindow(object):
         node = self.get_node(id)
         # mysql.finish(id)
         todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 1}})
-        self.treeWidget.blockSignals(True)
-        node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
-        self.treeWidget.blockSignals(False)
-        node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
-        node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
-        node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
-        node.setText(3, '已完成')
+        self.set_gray(node)
         # son = mysql.get_son(id)
         result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'subtask': 1})
         if 'subtask' in result:
             son = result['subtask']
             for j in son:
                 self.finish_node(str(j))
-        self.treeWidget.blockSignals(True)
-        node.setCheckState(0, Qt.Checked)
-        self.treeWidget.blockSignals(False)
         parent = node.parent()
         if parent != self.root:
             self.set_state(parent)
+
+    def set_gray(self, node):
+        self.treeWidget.blockSignals(True)
+        node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
+        node.setCheckState(0, Qt.Checked)
+        self.treeWidget.blockSignals(False)
+        node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
+        node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
+        node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
+        node.setText(3, '已完成')
 
     def check(self, node, column):
         if column == 0:
@@ -386,10 +387,10 @@ class Ui_MainWindow(object):
                     self.finish_node(id)
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-                    self.finish_node(id)
+                    self.set_gray(node)
         else:
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-            self.finish_node(id)
+            self.set_gray(node)
         todolist.update_one({'_id': ObjectId(id)}, {'$inc': {'cycle.finish_times': 1}})
 
     def new_day(self, result):
