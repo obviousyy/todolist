@@ -122,8 +122,7 @@ class Ui_todo(QDialog):
         self.comboBox.addItem("")
         self.comboBox.addItem("")
         self.comboBox.addItem("")
-        if self.parent is None or self.parent['cycle']['type'] == 2:
-            self.comboBox.addItem("")
+        self.comboBox.addItem("")
         self.gridLayout.addWidget(self.comboBox, 5, 0, 1, 2)
         self.checkBox = QtWidgets.QCheckBox(Dialog)
         self.checkBox.setObjectName("checkBox")
@@ -247,8 +246,7 @@ class Ui_todo(QDialog):
         self.comboBox.setItemText(0, _translate("Dialog", "一次性"))
         self.comboBox.setItemText(1, _translate("Dialog", "重复"))
         self.comboBox.setItemText(2, _translate("Dialog", "定期"))
-        if self.parent is None or self.parent['cycle']['type'] == 2:
-            self.comboBox.setItemText(3, _translate("Dialog", "阶段"))
+        self.comboBox.setItemText(3, _translate("Dialog", "阶段"))
         self.checkBox.setText(_translate("Dialog", "具体时间"))
         self.checkBox_2.setText(_translate("Dialog", "具体时间"))
 

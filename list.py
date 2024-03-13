@@ -129,8 +129,10 @@ class Ui_MainWindow(object):
             if son_num != len(son):
                 self.treeWidget.expandItem(node)
         else:
-            if i['is_finish'] >= 0:
+            if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
+            elif i['is_finish'] == 0:
+                self.set_gray(node)
             elif i['is_finish'] == -1:
                 node.setCheckState(0, Qt.Unchecked)
         return node.checkState(0)
@@ -204,9 +206,7 @@ class Ui_MainWindow(object):
                 todolist.update_one({'_id': ObjectId(id)}, {'$set': {'parent_task': ObjectId(parent_id)}})
             self.item_id.append((node, str(id)))
             if self.item['is_finish'] == 0:
-                self.treeWidget.blockSignals(True)
-                node.setCheckState(0, Qt.PartiallyChecked)
-                self.treeWidget.blockSignals(False)
+                self.set_gray(node)
             else:
                 self.treeWidget.blockSignals(True)
                 node.setCheckState(0, Qt.Unchecked)
