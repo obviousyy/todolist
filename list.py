@@ -25,7 +25,7 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
     def __lt__(self, other):
         value1 = self.text(3)
         value2 = other.text(3)
-        order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '一定要记得……': 4, '急急急': 5, '已完成': 0}
+        order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '不可忘记': 4, '急急急': 5, '已完成': 0}
         if order[value1] == order[value2]:
             value1 = self.text(2)
             value2 = other.text(2)
@@ -52,7 +52,7 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(600, 640)
+        MainWindow.resize(800, 640)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -63,11 +63,13 @@ class Ui_MainWindow(object):
         item_0.setText(0, 'self')
         self.root = item_0
         self.treeWidget.setHeaderLabels(['概要', '开始时间', '结束时间', '优先级'])
+        self.horizontalLayout.addWidget(self.treeWidget)
         MainWindow.setCentralWidget(self.centralwidget)
         header = self.treeWidget.header()  # 获取表头
         header.setSectionResizeMode(0, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
         header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
@@ -335,7 +337,7 @@ class Ui_MainWindow(object):
         elif value == 3:
             text = "早做早超生"
         elif value == 4:
-            text = "一定要记得……"
+            text = "不可忘记"
         elif value == 5:
             text = "急急急"
         elif value == 0:
