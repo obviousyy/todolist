@@ -99,14 +99,16 @@ class Ui_MainWindow(object):
         node.setText(0, i['title'])
         if i['cycle']['type'] > 0:
             i = self.new_day(i)
-        if 'begin' in i:
-            node.setText(1, i['begin'].strftime('%Y-%m-%d %H:%M'))
+            node.setText(1, i['end'].strftime('%Y-%m-%d %H:%M'))
         else:
-            node.setText(1, '')
-        if 'end' in i:
-            node.setText(2, i['end'].strftime('%Y-%m-%d %H:%M'))
-        else:
-            node.setText(2, '')
+            if 'begin' in i:
+                node.setText(1, i['begin'].strftime('%Y-%m-%d %H:%M'))
+            else:
+                node.setText(1, '')
+            if 'end' in i:
+                node.setText(2, i['end'].strftime('%Y-%m-%d %H:%M'))
+            else:
+                node.setText(2, '')
         self.set_priority(node, i['priority'])
         if 'subtask' in i:
             # son = mysql.get_son(i['id'])
