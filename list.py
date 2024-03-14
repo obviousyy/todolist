@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QCursor
-from PyQt5.QtWidgets import QMenu, QMessageBox, QTreeWidgetItem, QHeaderView
+from PyQt5.QtWidgets import QMenu, QMessageBox, QTreeWidgetItem, QHeaderView, QMainWindow
 from bson import ObjectId
 from dateutil.relativedelta import relativedelta
 
@@ -39,10 +39,11 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
             return order[value1] < order[value2]
 
 
+item_id = list()
+
 class Ui_MainWindow(object):
     def __init__(self, app):
         super(Ui_MainWindow, self).__init__()
-        self.item_id = list()
         self.app = app
         self.windows = list()
         self.root = None
@@ -94,7 +95,7 @@ class Ui_MainWindow(object):
 
     def create_node(self, i, root):
         node = CustomTreeWidgetItem(root)
-        self.item_id.append((node, str(i['_id'])))
+        item_id.append((node, str(i['_id'])))
         node.setText(0, i['title'])
         if i['cycle']['type'] > 0:
             i = self.new_day(i)
@@ -110,24 +111,20 @@ class Ui_MainWindow(object):
         if 'subtask' in i:
             # son = mysql.get_son(i['id'])
             son = i['subtask']
-            son_num = 0
             son_flag = False
             for j in son:
                 j = todolist.find_one({'_id': j})
                 state = self.create_node(j, node)
-                if state == Qt.Checked:
-                    son_num += 1
-                    son_flag = True
-                if state == Qt.PartiallyChecked:
-                    son_flag = True
-            if son_flag:
+                son_flag = son_flag or state
+            if not son_flag:
                 node.setCheckState(0, Qt.PartiallyChecked)
             else:
                 node.setCheckState(0, Qt.Unchecked)
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
-            if son_num != len(son):
+            if i['expend'] == 1 or (i['expend'] == 0 and son_flag):
                 self.treeWidget.expandItem(node)
+            return son_flag
         else:
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
@@ -135,7 +132,7 @@ class Ui_MainWindow(object):
                 self.set_gray(node)
             elif i['is_finish'] == -1:
                 node.setCheckState(0, Qt.Unchecked)
-        return node.checkState(0)
+            return node.checkState(0) == Qt.Unchecked
 
     def show_menu(self):
         item = self.treeWidget.currentItem()
@@ -157,6 +154,11 @@ class Ui_MainWindow(object):
             if result['cycle']['type'] >= 0:
                 action = menu.addAction('取消完成一次')
                 action.triggered.connect(self.un_finish_once)
+        if item.childCount() != 0:
+            action = menu.addAction('自动展开')
+            action.triggered.connect(lambda: self.set_auto(True))
+            action = menu.addAction('手动展开')
+            action.triggered.connect(lambda: self.set_auto(False))
         menu.exec_(QCursor.pos())
 
     def set_item(self, dic):
@@ -204,7 +206,7 @@ class Ui_MainWindow(object):
                 else:
                     todolist.update_one({'_id': ObjectId(parent_id)}, {'$set': {'subtask': [id]}})
                 todolist.update_one({'_id': ObjectId(id)}, {'$set': {'parent_task': ObjectId(parent_id)}})
-            self.item_id.append((node, str(id)))
+            item_id.append((node, str(id)))
             if self.item['is_finish'] == 0:
                 self.set_gray(node)
             else:
@@ -341,12 +343,12 @@ class Ui_MainWindow(object):
         node.setText(3, text)
 
     def get_id(self, node):
-        for i in self.item_id:
+        for i in item_id:
             if i[0] == node:
                 return i[1]
 
     def get_node(self, id):
-        for i in self.item_id:
+        for i in item_id:
             if i[1] == id:
                 return i[0]
 
@@ -430,3 +432,21 @@ class Ui_MainWindow(object):
         node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
         node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
         node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
+
+    def set_auto(self, flag):
+        node = self.treeWidget.currentItem()
+        id = self.get_id(node)
+        if flag:
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 0}})
+        else:
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 1}})
+
+
+class MyWidget(QMainWindow):
+    def closeEvent(self, event):
+        for (node, id) in item_id:
+            if node.isExpanded():
+                todolist.update_one({'_id': ObjectId(id), 'expend': {'$ne': 0}}, {'$set': {'expend': 1}})
+            else:
+                todolist.update_one({'_id': ObjectId(id), 'expend': {'$ne': 0}}, {'$set': {'expend': -1}})
+        event.accept()

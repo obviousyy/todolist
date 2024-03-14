@@ -5,7 +5,7 @@ import list
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
+    MainWindow = list.MyWidget()
     ui = list.Ui_MainWindow(app)
     ui.setupUi(MainWindow)
     MainWindow.show()
