@@ -16,10 +16,13 @@ from dateutil.relativedelta import relativedelta
 
 import mongodb
 
-
-# priority = {"没空不做": 1, "有空再做": 2, "早做早超生": 3, "一定要记得": 4, "急急急": 5}
-# cycle_type = {"定期": 2, "重复": 1, "阶段": 0, "一次性": -1}
-# cycle = {"天": 0, "周": 1, "月": 2, "年": 3}
+from enum import Enum
+class GROUP(Enum):
+    END = 1
+    CYCLE = 2
+    FINISH = 3
+    TOTAL = 4
+    BEGIN = 5
 
 class Ui_todo(QDialog):
     child_signal = pyqtSignal(dict)
@@ -169,7 +172,9 @@ class Ui_todo(QDialog):
 
         self.comboBox.activated['int'].connect(self.cycle)
 
+        self.cycle()
         if self.old is not None:
+            self.comboBox.setDisabled(True)
             todolist = mongodb.MongoDBPool.get_mongodb_pool()
             old = todolist.find_one({'_id': ObjectId(self.old)})
             self.lineEdit.setText(old['title'])
@@ -182,38 +187,27 @@ class Ui_todo(QDialog):
                 self.checkBox.setCheckState(Qt.Checked)
             else:
                 if not self.is_edit:
-                    self.dateEdit.hide()
-                    self.label_3.hide()
-                    self.checkBox.hide()
+                    self.show_or_hide(False, GROUP.BEGIN)
                 else:
-                    self.dateEdit.show()
-                    self.label_3.show()
-                    self.checkBox.show()
+                    self.show_or_hide(True, GROUP.BEGIN)
             if old['cycle']['type'] >= 0:
                 self.spinBox.setValue(int(old['cycle']['finish_times']))
-                self.spinBox.show()
-                self.label_6.show()
             if old['cycle']['type'] > 0:
                 self.comboBox_2.setCurrentIndex(old['cycle']['cyclicality'])
-                self.comboBox_2.show()
-                self.label_9.show()
             if 1 >= old['cycle']['type'] >= 0:
                 self.spinBox_2.setValue(int(old['cycle']['total_times']))
-                self.spinBox_2.show()
-                self.label_8.show()
             if 'end' in old:
                 self.dateEdit_2.setDate(QDate.fromString(old['end'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
                 self.timeEdit_2.setTime(QTime.fromString(old['end'].strftime('%H:%M'), 'hh:mm'))
                 self.checkBox_2.setCheckState(Qt.Checked)
             else:
                 if not self.is_edit:
-                    self.dateEdit_2.hide()
-                    self.checkBox_2.hide()
-                    self.label_4.hide()
+                    self.show_or_hide(False, GROUP.END)
                 else:
-                    self.dateEdit_2.show()
-                    self.checkBox_2.show()
-                    self.label_4.show()
+                    self.show_or_hide(True, GROUP.END)
+            if old['cycle']['type'] == 2:
+                self.timeEdit_2.setDisabled(True)
+                self.dateEdit_2.setDisabled(True)
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -300,6 +294,7 @@ class Ui_todo(QDialog):
         else:
             slot = self.comboBox_2.currentIndex()
             dic['cycle']['cyclicality'] = slot
+            flag = False
             if begin_date == '2000-01-01':
                 if self.parent and 'begin' in self.parent:
                     begin_date = self.parent['begin']
@@ -307,9 +302,10 @@ class Ui_todo(QDialog):
                     begin_date = datetime.today()
                 if begin_date.strftime("%H:%M") > begin_time:
                     begin_date += timedelta(days=1)
+                flag = True
             else:
                 begin_date = datetime.strptime(begin_date, '%Y-%m-%d')
-            if (self.parent is None or 'end' not in self.parent or
+            if (self.parent is None or 'begin' not in self.parent or
                     begin_date.strftime('%Y-%m-%d') + ' ' + begin_time >= self.parent['begin'].strftime('%Y-%m-%d %H:%M')):
                 if type == 2:
                     if slot == 3:
@@ -334,6 +330,10 @@ class Ui_todo(QDialog):
                 end_date = begin_date + timedelta(days=7)
             dic['end'] = end_date.strftime('%Y-%m-%d') + ' ' + begin_time
             dic['end'] = datetime.strptime(dic['end'], '%Y-%m-%d %H:%M')
+            if type == 1:
+                if flag:
+                    dic['begin'] = dic['end']
+                dic.pop('end')
         if type >= 0:
             dic['cycle']['finish_times'] = self.spinBox.value()
         if 1 >= type >= 0:
@@ -352,29 +352,62 @@ class Ui_todo(QDialog):
         self.close()
 
     def cycle(self):
-        if self.comboBox.currentIndex() != 0:
-            self.spinBox.show()
-            self.label_6.show()
-            if self.comboBox.currentIndex() != 3:
+        type = self.comboBox.currentIndex() - 1
+        if type == 0 or type == 1:
+            self.show_or_hide(True, GROUP.TOTAL)
+        else:
+            self.show_or_hide(False, GROUP.TOTAL)
+        if type >= 0:
+            self.show_or_hide(True, GROUP.FINISH)
+        else:
+            self.show_or_hide(False, GROUP.FINISH)
+        if type <= 0 or (type == 2 and self.is_edit):
+            self.show_or_hide(True, GROUP.END)
+        else:
+            self.show_or_hide(False, GROUP.END)
+        if type > 0:
+            self.show_or_hide(True, GROUP.CYCLE)
+        else:
+            self.show_or_hide(False, GROUP.CYCLE)
+        if type == 1:
+            self.label_3.setText("更新时间：")
+        else:
+            self.label_3.setText("开始时间：")
+
+    def show_or_hide(self, is_show, g):
+        if is_show:
+            if g == GROUP.CYCLE:
+                self.label_9.show()
+                self.comboBox_2.show()
+            elif g == GROUP.END:
+                self.label_4.show()
+                self.dateEdit_2.show()
+                self.checkBox_2.show()
+            elif g == GROUP.FINISH:
+                self.label_6.show()
+                self.spinBox.show()
+            elif g == GROUP.TOTAL:
                 self.label_8.show()
                 self.spinBox_2.show()
-            else:
+            elif g == GROUP.BEGIN:
+                self.label_3.show()
+                self.dateEdit.show()
+                self.checkBox.show()
+        else:
+            if g == GROUP.CYCLE:
+                self.label_9.hide()
+                self.comboBox_2.hide()
+            elif g == GROUP.END:
+                self.label_4.hide()
+                self.dateEdit_2.hide()
+                self.checkBox_2.hide()
+            elif g == GROUP.FINISH:
+                self.label_6.hide()
+                self.spinBox.hide()
+            elif g == GROUP.TOTAL:
                 self.label_8.hide()
                 self.spinBox_2.hide()
-        else:
-            self.label_6.hide()
-            self.spinBox.hide()
-            self.label_8.hide()
-            self.spinBox_2.hide()
-        if self.comboBox.currentIndex() <= 1:
-            self.label_4.show()
-            self.dateEdit_2.show()
-            self.checkBox_2.show()
-            self.comboBox_2.hide()
-            self.label_9.hide()
-        else:
-            self.label_4.hide()
-            self.dateEdit_2.hide()
-            self.checkBox_2.hide()
-            self.label_9.show()
-            self.comboBox_2.show()
+            elif g == GROUP.BEGIN:
+                self.label_3.hide()
+                self.dateEdit.hide()
+                self.checkBox.hide()
