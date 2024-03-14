@@ -107,7 +107,7 @@ class Ui_MainWindow(object):
         else:
             node.setText(2, '')
         self.set_priority(node, i['priority'])
-        if 'subtask' in i:
+        if 'subtask' in i and len(i['subtask']) > 0:
             # son = mysql.get_son(i['id'])
             son = i['subtask']
             son_flag = False
@@ -197,7 +197,7 @@ class Ui_MainWindow(object):
             if item != self.root:
                 parent_id = self.get_id(item)
                 subtask = todolist.find_one({'_id': ObjectId(parent_id)}, {'_id': 0, 'subtask': 1})
-                if 'subtask' in subtask:
+                if 'subtask' in subtask and len(subtask['subtask']) > 0:
                     todolist.update_one({'_id': ObjectId(parent_id)}, {'$addToSet': {'subtask': id}})
                 else:
                     todolist.update_one({'_id': ObjectId(parent_id)}, {'$set': {'subtask': [id]}})
@@ -273,7 +273,7 @@ class Ui_MainWindow(object):
         self.set_gray(node)
         # son = mysql.get_son(id)
         result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'subtask': 1})
-        if 'subtask' in result:
+        if 'subtask' in result and len(result['subtask']) > 0:
             son = result['subtask']
             for j in son:
                 self.finish_node(str(j))

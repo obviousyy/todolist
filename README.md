@@ -2,6 +2,8 @@
 
 ## 0.只下载dist/main，双击todolist1.exe就可以启动。
 
+是用pyinstall打包的，按[csdn教程](https://blog.csdn.net/qq_62689586/article/details/135143312)创建虚拟环境名`todo1`并安装依赖包，下载整个项目双击`make.bat`可以生成exe文件，也可以设置任一环境名，只需修改`make.bat`中的环境名。
+
 ## 1.数据库
 
 使用的是mongodb，数据库名为todolist，表名为todolist，默认是自动连接本地数据库且无账号密码，自己建数据库和表。
