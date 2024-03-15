@@ -97,6 +97,8 @@ class Ui_MainWindow(object):
         self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def create_node(self, i, root):
+        if i['cycle']['type'] > 0:
+            self.new_day(i)
         node = CustomTreeWidgetItem(root)
         item_id.append((node, str(i['_id'])))
         node.setText(0, i['title'])
@@ -420,26 +422,26 @@ class Ui_MainWindow(object):
         parent = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
         if 'parent_task' in parent:
             parent = todolist.find_one({'_id': ObjectId(parent['parent_task'])}, {'end': 1})
-        if 'end' not in parent or now < parent['end']:
-            if result['begin'] < now and result['is_finish'] < 1:
-                last = result['begin']
-                if result['cycle']['cyclicality'] == 3:
-                    result['begin'] = last + relativedelta(years=1)
-                elif result['cycle']['cyclicality'] == 2:
-                    result['begin'] = last + relativedelta(months=1)
-                elif result['cycle']['cyclicality'] == 0:
-                    result['begin'] = last + timedelta(days=1)
-                elif result['cycle']['cyclicality'] == 1:
-                    result['begin'] = last + timedelta(days=7)
-                if result['cycle']['type'] == 2:
-                    if result['is_finish'] < 0:
-                        result['cycle']['finish_times'] = 0
-                    else:
-                        result['cycle']['finish_times'] += 1
-                elif result['cycle']['type'] == 1:
-                    result['cycle']['total_times'] += 1
-                result['is_finish'] = -1
-            todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+            if 'end' not in parent or now < parent['end']:
+                if result['begin'] < now and result['is_finish'] < 1:
+                    last = result['begin']
+                    if result['cycle']['cyclicality'] == 3:
+                        result['begin'] = last + relativedelta(years=1)
+                    elif result['cycle']['cyclicality'] == 2:
+                        result['begin'] = last + relativedelta(months=1)
+                    elif result['cycle']['cyclicality'] == 0:
+                        result['begin'] = last + timedelta(days=1)
+                    elif result['cycle']['cyclicality'] == 1:
+                        result['begin'] = last + timedelta(days=7)
+                    if result['cycle']['type'] == 2:
+                        if result['is_finish'] < 0:
+                            result['cycle']['finish_times'] = 0
+                        else:
+                            result['cycle']['finish_times'] += 1
+                    elif result['cycle']['type'] == 1:
+                        result['cycle']['total_times'] += 1
+                    result['is_finish'] = -1
+                todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
         return result
 
     def un_finish_once(self):

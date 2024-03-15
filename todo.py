@@ -153,12 +153,6 @@ class Ui_todo(QDialog):
             self.buttonBox.hide()
             self.checkBox_2.hide()
             self.checkBox.hide()
-        self.comboBox_2.hide()
-        self.label_9.hide()
-        self.label_6.hide()
-        self.spinBox.hide()
-        self.label_8.hide()
-        self.spinBox_2.hide()
         self.timeEdit.setVisible(False)
         self.timeEdit_2.setVisible(False)
 
@@ -172,7 +166,6 @@ class Ui_todo(QDialog):
 
         self.comboBox.activated['int'].connect(self.cycle)
 
-        self.cycle()
         if self.old is not None:
             self.comboBox.setDisabled(True)
             todolist = mongodb.MongoDBPool.get_mongodb_pool()
@@ -181,6 +174,13 @@ class Ui_todo(QDialog):
             self.textEdit.setText(old['content'])
             self.comboBox_3.setCurrentIndex(old['priority'] - 1)
             self.comboBox.setCurrentIndex(old['cycle']['type'] + 1)
+            if old['cycle']['type'] >= 0:
+                self.spinBox.setValue(int(old['cycle']['finish_times']))
+            if old['cycle']['type'] > 0:
+                self.comboBox_2.setCurrentIndex(old['cycle']['cyclicality'])
+            if 1 >= old['cycle']['type'] >= 0:
+                self.spinBox_2.setValue(int(old['cycle']['total_times']))
+            self.cycle()
             if 'begin' in old:
                 self.dateEdit.setDate(QDate.fromString(old['begin'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
                 self.timeEdit.setTime(QTime.fromString(old['begin'].strftime('%H:%M'), 'hh:mm'))
@@ -190,12 +190,6 @@ class Ui_todo(QDialog):
                     self.show_or_hide(False, GROUP.BEGIN)
                 else:
                     self.show_or_hide(True, GROUP.BEGIN)
-            if old['cycle']['type'] >= 0:
-                self.spinBox.setValue(int(old['cycle']['finish_times']))
-            if old['cycle']['type'] > 0:
-                self.comboBox_2.setCurrentIndex(old['cycle']['cyclicality'])
-            if 1 >= old['cycle']['type'] >= 0:
-                self.spinBox_2.setValue(int(old['cycle']['total_times']))
             if 'end' in old:
                 self.dateEdit_2.setDate(QDate.fromString(old['end'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
                 self.timeEdit_2.setTime(QTime.fromString(old['end'].strftime('%H:%M'), 'hh:mm'))
