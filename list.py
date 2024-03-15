@@ -32,7 +32,7 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
             if value1 == value2:
                 value1 = self.text(1)
                 value2 = other.text(1)
-                return value1 < value2
+                return value1 > value2
             else:
                 return value1 > value2
         else:
@@ -401,24 +401,6 @@ class Ui_MainWindow(object):
 
     def new_day(self, result):
         now = datetime.today()
-        # if result['end'] < now and result['is_finish'] < 1:
-        #     result['begin'] = result['end']
-        #     if result['cycle']['cyclicality'] == 3:
-        #         result['end'] = result['begin'] + relativedelta(years=1)
-        #     elif result['cycle']['cyclicality'] == 2:
-        #         result['end'] = result['begin'] + relativedelta(months=1)
-        #     elif result['cycle']['cyclicality'] == 0:
-        #         result['end'] = result['begin'] + timedelta(days=1)
-        #     elif result['cycle']['cyclicality'] == 1:
-        #         result['end'] = result['begin'] + timedelta(days=7)
-        #     if result['cycle']['type'] == 2:
-        #         if result['is_finish'] < 0:
-        #             result['cycle']['finish_times'] = 0
-        #         else:
-        #             result['cycle']['finish_times'] += 1
-        #     elif result['cycle']['type'] == 1:
-        #         result['cycle']['total_times'] += 1
-        #     result['is_finish'] = -1
         parent = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
         if 'parent_task' in parent:
             parent = todolist.find_one({'_id': ObjectId(parent['parent_task'])}, {'end': 1})
