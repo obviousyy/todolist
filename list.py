@@ -115,11 +115,13 @@ class Ui_MainWindow(object):
             # son = mysql.get_son(i['id'])
             son = i['subtask']
             son_flag = False
+            son_all = True
             for j in son:
                 j = todolist.find_one({'_id': j})
                 state = self.create_node(j, node)
                 son_flag = son_flag or state
-            if not son_flag:
+                son_all = son_all and state
+            if not son_all:
                 node.setCheckState(0, Qt.PartiallyChecked)
             else:
                 node.setCheckState(0, Qt.Unchecked)
@@ -262,6 +264,7 @@ class Ui_MainWindow(object):
         id = self.get_id(node)
         parent = self.get_id(node.parent())
         # mysql.delete_point(id)
+        todolist.delete_many({'parent_task': ObjectId(id)})
         todolist.delete_one({'_id': ObjectId(id)})
         todolist.update_one({'_id': ObjectId(parent)}, {'$pull': {'subtask': ObjectId(id)}})
         item = self.treeWidget.currentItem()
@@ -282,7 +285,7 @@ class Ui_MainWindow(object):
             for j in son:
                 self.finish_node(str(j))
         parent = node.parent()
-        if parent != self.root:
+        if parent != self.root and parent.checkState(0) != Qt.Checked:
             self.set_state(parent)
 
     def set_gray(self, node):
