@@ -111,10 +111,10 @@ class Ui_MainWindow(object):
         else:
             node.setText(2, '')
         self.set_priority(node, i['priority'])
+        son_flag = False
         if 'subtask' in i and len(i['subtask']) > 0:
             # son = mysql.get_son(i['id'])
             son = i['subtask']
-            son_flag = False
             son_all = True
             for j in son:
                 j = todolist.find_one({'_id': j})
@@ -129,15 +129,18 @@ class Ui_MainWindow(object):
                 self.finish_node(str(i['_id']))
             if i['expend'] == 1 or (i['expend'] == 0 and son_flag):
                 self.treeWidget.expandItem(node)
-            return son_flag
         else:
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
             elif i['is_finish'] == 0:
                 self.set_gray(node)
             elif i['is_finish'] == -1:
-                node.setCheckState(0, Qt.Unchecked)
-            return node.checkState(0) == Qt.Unchecked
+                if 0 <= i['cycle']['type'] <= 1 and i['cycle']['finish_times'] > 0:
+                    node.setCheckState(0, Qt.PartiallyChecked)
+                else:
+                    node.setCheckState(0, Qt.Unchecked)
+                son_flag = True
+        return son_flag
 
     def show_menu(self):
         item = self.treeWidget.currentItem()
@@ -246,10 +249,6 @@ class Ui_MainWindow(object):
                 self.item['is_finish'] = -1
             if self.item['is_finish'] == 0:
                 self.set_gray(node)
-            else:
-                self.treeWidget.blockSignals(True)
-                node.setCheckState(0, Qt.Unchecked)
-                self.treeWidget.blockSignals(False)
             id = self.get_id(self.treeWidget.currentItem())
             # mysql.edit_point(id, self.item['title'], self.item['content'], self.item['time'], self.item['priority'], self.item['count'])
             todolist.update_one({'_id': ObjectId(id)}, {'$set': self.item})
@@ -397,6 +396,8 @@ class Ui_MainWindow(object):
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
                     self.set_gray(node)
+            else:
+                node.setCheckState(0, Qt.PartiallyChecked)
         else:
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
             self.set_gray(node)
@@ -432,18 +433,28 @@ class Ui_MainWindow(object):
     def un_finish_once(self):
         node = self.treeWidget.currentItem()
         id = self.get_id(node)
-        todolist.update_one({'_id': ObjectId(id), 'cycle.finish_times': {"$gt": 0}},
-                            {'$inc': {'cycle.finish_times': -1}})
-        new = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})
-        self.set_priority(node, new['priority'])
-        todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
-        self.treeWidget.blockSignals(True)
-        node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
-        node.setCheckState(0, Qt.Unchecked)
-        self.treeWidget.blockSignals(False)
+        result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1, 'cycle': 1})
+        if result['cycle']['finish_times'] <= 1:
+            result['cycle']['finish_times'] = 0
+            self.treeWidget.blockSignals(True)
+            node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
+            node.setCheckState(0, Qt.Unchecked)
+            self.treeWidget.blockSignals(False)
+        elif result['cycle']['finish_times'] == result['cycle']['total_times']:
+            result['cycle']['finish_times'] -= 1
+            self.set_priority(node, result['priority'])
+            self.treeWidget.blockSignals(True)
+            node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
+            node.setCheckState(0, Qt.PartiallyChecked)
+            self.treeWidget.blockSignals(False)
+        else:
+            result['cycle']['finish_times'] -= 1
+        result['is_finish'] = -1
         node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
         node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
         node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
+        todolist.update_one({'_id': ObjectId(id)}, {'$set': result})
+
 
     def set_auto(self, flag):
         node = self.treeWidget.currentItem()

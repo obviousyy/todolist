@@ -336,6 +336,10 @@ class Ui_todo(QDialog):
                 msg_box = QMessageBox(QMessageBox.Critical, 'error', '完成次数不能超过总次数')
                 msg_box.exec_()
                 return
+            elif dic['cycle']['finish_times'] == 0:
+                msg_box = QMessageBox(QMessageBox.Critical, 'error', '总次数不能为0')
+                msg_box.exec_()
+                return
             elif dic['cycle']['finish_times'] == dic['cycle']['total_times']:
                 dic['is_finish'] = 0
         self.child_signal.emit(dic)
