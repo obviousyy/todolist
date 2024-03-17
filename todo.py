@@ -236,7 +236,7 @@ class Ui_todo(QDialog):
         self.comboBox_3.setItemText(0, _translate("Dialog", "没空不做"))
         self.comboBox_3.setItemText(1, _translate("Dialog", "有空再做"))
         self.comboBox_3.setItemText(2, _translate("Dialog", "早做早超生"))
-        self.comboBox_3.setItemText(3, _translate("Dialog", "一定要记得"))
+        self.comboBox_3.setItemText(3, _translate("Dialog", "不可忘记"))
         self.comboBox_3.setItemText(4, _translate("Dialog", "急急急"))
         self.label_10.setText(_translate("Dialog", "总次数："))
         self.label_8.setText(_translate("Dialog", "当前总次数："))
