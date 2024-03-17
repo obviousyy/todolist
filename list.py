@@ -408,7 +408,8 @@ class Ui_MainWindow(object):
         parent = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
         if 'parent_task' in parent:
             parent = todolist.find_one({'_id': ObjectId(parent['parent_task'])}, {'end': 1})
-            if 'end' not in parent or now < parent['end']:
+            if (('end' not in parent or now < parent['end'])
+                    and ('end_times' not in result['cycle'] or result['cycle']['total_times'] < result['cycle']['end_times'])):
                 if result['begin'] < now and result['is_finish'] < 1:
                     last = result['begin']
                     if result['cycle']['cyclicality'] == 3:
