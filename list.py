@@ -317,9 +317,9 @@ class Ui_MainWindow(object):
                 # mysql.set_priority(id, 0)
                 todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                 parent = node.parent()
-                if parent != self.root:
+                while parent != self.root:
                     self.set_state(parent)
-                    if parent.text(2) == '已完成':
+                    if parent.text(3) == '已完成':
                         id = self.get_id(parent)
                         # priority = mysql.get_priority(id)
                         priority = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})['priority']
@@ -332,6 +332,7 @@ class Ui_MainWindow(object):
                         parent.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
                         parent.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
                         parent.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
+                    parent = parent.parent()
 
     def set_priority(self, node, value):
         if value == 1:
