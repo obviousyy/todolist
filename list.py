@@ -133,7 +133,7 @@ class Ui_MainWindow(object):
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
             elif i['is_finish'] == 0:
-                self.set_gray(node)
+                self.set_gray(node, False)
             elif i['is_finish'] == -1:
                 if 0 <= i['cycle']['type'] <= 1 and i['cycle']['finish_times'] > 0:
                     node.setCheckState(0, Qt.PartiallyChecked)
@@ -153,13 +153,13 @@ class Ui_MainWindow(object):
         if item != self.root and item.text(3) != '已完成':
             action = menu.addAction('修改任务')
             action.triggered.connect(self.edit_node)
-            if result['cycle']['type'] >= 0 > result['is_finish']:
+            if 2 > result['cycle']['type'] >= 0 > result['is_finish']:
                 action = menu.addAction('完成一次')
                 action.triggered.connect(self.finish_once)
         if item != self.root:
             action = menu.addAction('删除任务')
             action.triggered.connect(self.delete_node)
-            if result['cycle']['type'] >= 0:
+            if 2 > result['cycle']['type'] >= 0:
                 action = menu.addAction('取消完成一次')
                 action.triggered.connect(self.un_finish_once)
         if item != self.root and item.childCount() != 0:
@@ -213,7 +213,7 @@ class Ui_MainWindow(object):
                 todolist.update_one({'_id': ObjectId(id)}, {'$set': {'parent_task': ObjectId(parent_id)}})
             item_id.append((node, str(id)))
             if self.item['is_finish'] == 0:
-                self.set_gray(node)
+                self.set_gray(node, False)
             else:
                 self.treeWidget.blockSignals(True)
                 node.setCheckState(0, Qt.Unchecked)
@@ -248,7 +248,7 @@ class Ui_MainWindow(object):
             if 'is_finish' not in self.item or self.item['is_finish'] != 0:
                 self.item['is_finish'] = -1
             if self.item['is_finish'] == 0:
-                self.set_gray(node)
+                self.set_gray(node, False)
             id = self.get_id(self.treeWidget.currentItem())
             # mysql.edit_point(id, self.item['title'], self.item['content'], self.item['time'], self.item['priority'], self.item['count'])
             todolist.update_one({'_id': ObjectId(id)}, {'$set': self.item})
@@ -276,7 +276,7 @@ class Ui_MainWindow(object):
         node = self.get_node(id)
         # mysql.finish(id)
         todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 1}})
-        self.set_gray(node)
+        self.set_gray(node, True)
         # son = mysql.get_son(id)
         result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'subtask': 1})
         if 'subtask' in result and len(result['subtask']) > 0:
@@ -287,15 +287,19 @@ class Ui_MainWindow(object):
         if parent != self.root and parent.checkState(0) != Qt.Checked:
             self.set_state(parent)
 
-    def set_gray(self, node):
+    def set_gray(self, node, flag):
         self.treeWidget.blockSignals(True)
         node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
-        node.setCheckState(0, Qt.Checked)
+        if flag:
+            node.setCheckState(0, Qt.Checked)
+        else:
+            node.setCheckState(0, Qt.PartiallyChecked)
         self.treeWidget.blockSignals(False)
         node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
         node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
         node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
-        node.setText(3, '已完成')
+        if flag:
+            node.setText(3, '已完成')
 
     def check(self, node, column):
         if column == 0:
@@ -312,10 +316,18 @@ class Ui_MainWindow(object):
                 node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
                 self.set_state(node)
                 # priority = mysql.get_priority(id)
-                priority = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'priority': 1})['priority']
-                self.set_priority(node, priority)
+                result = todolist.find_one({'_id': ObjectId(id)})
+                self.set_priority(node, result['priority'])
                 # mysql.set_priority(id, 0)
-                todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
+                if 0 <= result['cycle']['type'] < 2:
+                    if result['cycle']['finish_times'] > 0:
+                        self.treeWidget.blockSignals(True)
+                        node.setCheckState(0, Qt.PartiallyChecked)
+                        self.treeWidget.blockSignals(False)
+                        if result['cycle']['finish_times'] == result['cycle']['total_times']:
+                            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
+                else:
+                    todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                 parent = node.parent()
                 while parent != self.root:
                     self.set_state(parent)
@@ -396,12 +408,12 @@ class Ui_MainWindow(object):
                     self.finish_node(id)
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-                    self.set_gray(node)
+                    self.set_gray(node, False)
             else:
                 node.setCheckState(0, Qt.PartiallyChecked)
         else:
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-            self.set_gray(node)
+            self.set_gray(node, False)
         todolist.update_one({'_id': ObjectId(id)}, {'$inc': {'cycle.finish_times': 1}})
 
     def new_day(self, result):
