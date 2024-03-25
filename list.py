@@ -26,17 +26,22 @@ class CustomTreeWidgetItem(QTreeWidgetItem):
         value1 = self.text(3)
         value2 = other.text(3)
         order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '不可忘记': 4, '急急急': 5, '已完成': 0}
-        if order[value1] == order[value2]:
-            value1 = self.text(2)
-            value2 = other.text(2)
-            if value1 == value2:
-                value1 = self.text(1)
-                value2 = other.text(1)
+        if order[value1] != order[value2]:
+            return order[value1] < order[value2]
+        else:
+            value1 = self.checkState(0)
+            value2 = other.checkState(0)
+            if value1 != value2:
                 return value1 > value2
             else:
-                return value1 > value2
-        else:
-            return order[value1] < order[value2]
+                value1 = self.text(2)
+                value2 = other.text(2)
+                if value1 != value2:
+                    return value1 > value2
+                else:
+                    value1 = self.text(1)
+                    value2 = other.text(1)
+                    return value1 > value2
 
 
 item_id = list()
@@ -298,8 +303,7 @@ class Ui_MainWindow(object):
         node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
         node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
         node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
-        if flag:
-            node.setText(3, '已完成')
+        node.setText(3, '已完成')
 
     def check(self, node, column):
         if column == 0:
