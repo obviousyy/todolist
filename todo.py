@@ -204,10 +204,10 @@ class Ui_todo(QDialog):
                 self.timeEdit_2.setTime(QTime.fromString(old['end'].strftime('%H:%M'), 'hh:mm'))
                 self.checkBox_2.setCheckState(Qt.Checked)
             else:
-                if not self.is_edit:
-                    self.show_or_hide(False, GROUP.END)
-                else:
+                if self.is_edit and old['cycle']['type'] != 1:
                     self.show_or_hide(True, GROUP.END)
+                else:
+                    self.show_or_hide(False, GROUP.END)
             if old['cycle']['type'] == 2:
                 self.timeEdit_2.setDisabled(True)
                 self.dateEdit_2.setDisabled(True)
