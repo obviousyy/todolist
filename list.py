@@ -116,23 +116,23 @@ class Ui_MainWindow(object):
         else:
             node.setText(2, '')
         self.set_priority(node, i['priority'])
-        son_flag = False
+        no_all_finish = False
         if 'subtask' in i and len(i['subtask']) > 0:
             # son = mysql.get_son(i['id'])
             son = i['subtask']
-            son_all = True
+            all_no_finish = True
             for j in son:
                 j = todolist.find_one({'_id': j})
-                state = self.create_node(j, node)
-                son_flag = son_flag or state
-                son_all = son_all and state
-            if not son_all:
+                state1, state2 = self.create_node(j, node)
+                no_all_finish = no_all_finish or state1
+                all_no_finish = all_no_finish and state2
+            if not all_no_finish:
                 node.setCheckState(0, Qt.PartiallyChecked)
             else:
                 node.setCheckState(0, Qt.Unchecked)
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']))
-            if i['expend'] == 1 or (i['expend'] == 0 and son_flag):
+            if i['expend'] == 1 or (i['expend'] == 0 and no_all_finish):
                 self.treeWidget.expandItem(node)
         else:
             if i['is_finish'] == 1:
@@ -144,8 +144,8 @@ class Ui_MainWindow(object):
                     node.setCheckState(0, Qt.PartiallyChecked)
                 else:
                     node.setCheckState(0, Qt.Unchecked)
-                son_flag = True
-        return son_flag
+                no_all_finish = True
+        return no_all_finish, node.checkState(0) == Qt.Unchecked
 
     def show_menu(self):
         item = self.treeWidget.currentItem()
@@ -328,7 +328,7 @@ class Ui_MainWindow(object):
                         self.treeWidget.blockSignals(True)
                         node.setCheckState(0, Qt.PartiallyChecked)
                         self.treeWidget.blockSignals(False)
-                        if result['cycle']['finish_times'] == result['cycle']['total_times']:
+                        if result['cycle']['total_times'] != 0 and result['cycle']['finish_times'] == result['cycle']['total_times']:
                             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
@@ -426,8 +426,8 @@ class Ui_MainWindow(object):
         if 'parent_task' in parent:
             parent = todolist.find_one({'_id': ObjectId(parent['parent_task'])}, {'end': 1})
         if (('parent_task' not in parent or 'end' not in parent or now < parent['end'])
-                and ('end_times' not in result['cycle'] or result['cycle']['total_times'] < result['cycle'][
-                    'end_times'])):
+                and ('end_times' not in result['cycle'] or result['cycle']['end_times'] == 0
+                     or result['cycle']['total_times'] < result['cycle']['end_times'])):
             if result['begin'] < now and result['is_finish'] < 1:
                 last = result['begin']
                 if result['cycle']['cyclicality'] == 3:

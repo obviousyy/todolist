@@ -374,6 +374,10 @@ class Ui_todo(QDialog):
             self.label_3.setText("更新时间：")
         else:
             self.label_3.setText("开始时间：")
+        if type == 0:
+            self.label_8.setText("总次数")
+        else:
+            self.label_8.setText("当前总次数")
 
     def show_or_hide(self, is_show, g):
         if is_show:
