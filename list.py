@@ -291,6 +291,7 @@ class Ui_MainWindow(object):
         parent = node.parent()
         if parent != self.root and parent.checkState(0) != Qt.Checked:
             self.set_state(parent)
+        self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def set_gray(self, node, flag):
         self.treeWidget.blockSignals(True)
@@ -330,6 +331,7 @@ class Ui_MainWindow(object):
                         self.treeWidget.blockSignals(False)
                         if result['cycle']['total_times'] != 0 and result['cycle']['finish_times'] == result['cycle']['total_times']:
                             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
+                            self.set_gray(node, False)
                 else:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                 parent = node.parent()
