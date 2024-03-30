@@ -410,7 +410,7 @@ class Ui_MainWindow(object):
             elif cycle['finish_times'] + 1 == cycle['total_times']:
                 if cycle['type'] == 0:
                     self.finish_node(id)
-                elif cycle['total_times'] == cycle['end_times'] != 0:
+                elif 'end_times' in cycle and cycle['total_times'] == cycle['end_times'] != 0:
                     todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 1}})
                     self.finish_node(id)
                 else:
