@@ -23,25 +23,30 @@ todolist = mongodb.MongoDBPool.get_mongodb_pool()
 
 class CustomTreeWidgetItem(QTreeWidgetItem):
     def __lt__(self, other):
-        value1 = self.text(3)
-        value2 = other.text(3)
-        order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '不可忘记': 4, '急急急': 5, '已完成': 0}
-        if order[value1] != order[value2]:
-            return order[value1] < order[value2]
-        else:
-            value1 = self.checkState(0)
-            value2 = other.checkState(0)
-            if value1 != value2:
-                return value1 > value2
+        value1 = self.foreground(3)
+        value2 = other.foreground(3)
+        if value1 == value2:
+            value1 = self.text(3)
+            value2 = other.text(3)
+            order = {'没空不做': 1, '有空再做': 2, '早做早超生': 3, '不可忘记': 4, '急急急': 5, '已完成': 0}
+            if order[value1] != order[value2]:
+                return order[value1] < order[value2]
             else:
-                value1 = self.text(2)
-                value2 = other.text(2)
+                value1 = self.checkState(0)
+                value2 = other.checkState(0)
                 if value1 != value2:
                     return value1 > value2
                 else:
-                    value1 = self.text(1)
-                    value2 = other.text(1)
-                    return value1 > value2
+                    value1 = self.text(2)
+                    value2 = other.text(2)
+                    if value1 != value2:
+                        return value1 > value2
+                    else:
+                        value1 = self.text(1)
+                        value2 = other.text(1)
+                        return value1 > value2
+        else:
+            return value1 == QtGui.QBrush(QtGui.QColor('gray'))
 
 
 item_id = list()
@@ -109,6 +114,15 @@ class Ui_MainWindow(object):
         node.setText(0, i['title'])
         if 'begin' in i:
             node.setText(1, i['begin'].strftime('%Y-%m-%d %H:%M'))
+            now = datetime.today()
+            if (i['cycle']['type'] != 1 and i['begin'] > now
+                    or i['cycle']['type'] == 1 and i['cycle']['total_times'] == 0):
+                self.treeWidget.blockSignals(True)
+                node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
+                self.treeWidget.blockSignals(False)
+                node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
+                node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
+                node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
         else:
             node.setText(1, '')
         if 'end' in i:
@@ -151,20 +165,21 @@ class Ui_MainWindow(object):
         item = self.treeWidget.currentItem()
         menu = QMenu()
         id = self.get_id(item)
-        result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0, 'cycle.type': 1, 'is_finish': 1})
-        if item.text(3) != '已完成' and (result is None or result['cycle']['type'] < 0):
+        result = todolist.find_one({'_id': ObjectId(id)}, {'_id': 0})
+        if result is None or result['is_finish'] != 1 and result['cycle']['type'] < 0:
             action = menu.addAction('添加子任务')
             action.triggered.connect(self.add_node)
         if item != self.root and result['is_finish'] != 1:
             action = menu.addAction('修改任务')
             action.triggered.connect(self.edit_node)
-            if 2 > result['cycle']['type'] >= 0 > result['is_finish']:
+            if (result['cycle']['type'] == 2 and result['is_finish'] == -1
+                    or 0 <= result['cycle']['type'] <= 1 and result['is_finish'] == -1 and result['cycle']['total_times'] > 0):
                 action = menu.addAction('完成一次')
                 action.triggered.connect(self.finish_once)
         if item != self.root:
             action = menu.addAction('删除任务')
             action.triggered.connect(self.delete_node)
-            if 2 > result['cycle']['type'] >= 0:
+            if 2 > result['cycle']['type'] >= 0 and result['cycle']['finish_times'] > 0:
                 action = menu.addAction('取消完成一次')
                 action.triggered.connect(self.un_finish_once)
         if item != self.root and item.childCount() != 0:
@@ -198,6 +213,15 @@ class Ui_MainWindow(object):
             self.item['expend'] = 0
             if 'begin' in self.item:
                 node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
+                now = datetime.today()
+                if (self.item['cycle']['type'] != 1 and self.item['begin'] > now
+                        or self.item['cycle']['type'] == 1 and self.item['cycle']['total_times'] == 0):
+                    self.treeWidget.blockSignals(True)
+                    node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
+                    self.treeWidget.blockSignals(False)
+                    node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
+                    node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
+                    node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
             else:
                 node.setText(1, '')
             if 'end' in self.item:
@@ -249,6 +273,22 @@ class Ui_MainWindow(object):
             self.treeWidget.blockSignals(False)
             if 'begin' in self.item:
                 node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
+                now = datetime.today()
+                if (self.item['cycle']['type'] != 1 and self.item['begin'] > now
+                        or self.item['cycle']['type'] == 1 and self.item['cycle']['total_times'] == 0):
+                    self.treeWidget.blockSignals(True)
+                    node.setForeground(0, QtGui.QBrush(QtGui.QColor('gray')))
+                    self.treeWidget.blockSignals(False)
+                    node.setForeground(1, QtGui.QBrush(QtGui.QColor('gray')))
+                    node.setForeground(2, QtGui.QBrush(QtGui.QColor('gray')))
+                    node.setForeground(3, QtGui.QBrush(QtGui.QColor('gray')))
+                else:
+                    self.treeWidget.blockSignals(True)
+                    node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
+                    self.treeWidget.blockSignals(False)
+                    node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
+                    node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
+                    node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
             else:
                 node.setText(1, '')
             if 'end' in self.item:
@@ -269,6 +309,15 @@ class Ui_MainWindow(object):
                 todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'begin': ""}})
             if 'end' not in self.item:
                 todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'end': ""}})
+            if self.item['cycle']['type'] == -1:
+                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle': ""}})
+                todolist.update_one({'_id': ObjectId(id)}, {'$set': {'cycle.type': -1}})
+            elif self.item['cycle']['type'] == 2:
+                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.total_times': "", 'cycle.end_times': ""}})
+            elif self.item['cycle']['type'] == 0:
+                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.cyclicality': ""}})
+            if 'end_times' not in self.item['cycle']:
+                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.end_times': ""}})
             self.item = None
 
     def delete_node(self):

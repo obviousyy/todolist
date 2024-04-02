@@ -172,7 +172,6 @@ class Ui_todo(QDialog):
         self.comboBox.activated['int'].connect(self.cycle)
 
         if self.old is not None:
-            self.comboBox.setDisabled(True)
             todolist = mongodb.MongoDBPool.get_mongodb_pool()
             old = todolist.find_one({'_id': ObjectId(self.old)})
             self.lineEdit.setText(old['title'])
