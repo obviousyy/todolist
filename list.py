@@ -304,20 +304,12 @@ class Ui_MainWindow(object):
                 self.finish_node(self.get_id(node), True)
             id = self.get_id(self.treeWidget.currentItem())
             # mysql.edit_point(id, self.item['title'], self.item['content'], self.item['time'], self.item['priority'], self.item['count'])
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': self.item})
             if 'begin' not in self.item:
                 todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'begin': ""}})
             if 'end' not in self.item:
                 todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'end': ""}})
-            if self.item['cycle']['type'] == -1:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle': ""}})
-                todolist.update_one({'_id': ObjectId(id)}, {'$set': {'cycle.type': -1}})
-            elif self.item['cycle']['type'] == 2:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.total_times': "", 'cycle.end_times': ""}})
-            elif self.item['cycle']['type'] == 0:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.cyclicality': ""}})
-            if 'end_times' not in self.item['cycle']:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle.end_times': ""}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle': ""}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': self.item})
             self.item = None
 
     def delete_node(self):
