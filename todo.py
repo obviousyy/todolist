@@ -174,6 +174,8 @@ class Ui_todo(QDialog):
         if self.old is not None:
             todolist = mongodb.MongoDBPool.get_mongodb_pool()
             old = todolist.find_one({'_id': ObjectId(self.old)})
+            if 'subtask' in old:
+                self.comboBox.setDisabled(True)
             self.lineEdit.setText(old['title'])
             self.textEdit.setText(old['content'])
             self.comboBox_3.setCurrentIndex(old['priority'] - 1)
@@ -364,6 +366,12 @@ class Ui_todo(QDialog):
             self.show_or_hide(False, GROUP.FINISH)
         if type <= 0 or (type == 2 and self.is_edit):
             self.show_or_hide(True, GROUP.END)
+            if type == 2:
+                self.timeEdit_2.setDisabled(True)
+                self.dateEdit_2.setDisabled(True)
+            else:
+                self.timeEdit_2.setDisabled(False)
+                self.dateEdit_2.setDisabled(False)
         else:
             self.show_or_hide(False, GROUP.END)
         if type > 0:
@@ -390,6 +398,7 @@ class Ui_todo(QDialog):
                 self.label_4.show()
                 self.dateEdit_2.show()
                 self.checkBox_2.show()
+                self.timeEdit_2.show()
             elif g == GROUP.FINISH:
                 self.label_6.show()
                 self.spinBox.show()
@@ -400,6 +409,7 @@ class Ui_todo(QDialog):
                 self.label_3.show()
                 self.dateEdit.show()
                 self.checkBox.show()
+                self.timeEdit.show()
             elif g == GROUP.END_TIMES:
                 self.label_10.show()
                 self.spinBox_3.show()
@@ -411,6 +421,7 @@ class Ui_todo(QDialog):
                 self.label_4.hide()
                 self.dateEdit_2.hide()
                 self.checkBox_2.hide()
+                self.timeEdit_2.hide()
             elif g == GROUP.FINISH:
                 self.label_6.hide()
                 self.spinBox.hide()
@@ -421,6 +432,7 @@ class Ui_todo(QDialog):
                 self.label_3.hide()
                 self.dateEdit.hide()
                 self.checkBox.hide()
+                self.timeEdit.hide()
             elif g == GROUP.END_TIMES:
                 self.label_10.hide()
                 self.spinBox_3.hide()

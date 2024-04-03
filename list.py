@@ -467,32 +467,48 @@ class Ui_MainWindow(object):
         todolist.update_one({'_id': ObjectId(id)}, {'$inc': {'cycle.finish_times': 1}})
 
     def new_day(self, result):
+        if result['is_finish'] == 1 or result['cycle']['type'] < 1:
+            return result
         now = datetime.today()
-        parent = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
-        if 'parent_task' in parent:
-            parent = todolist.find_one({'_id': ObjectId(parent['parent_task'])}, {'end': 1})
-        if (('parent_task' not in parent or 'end' not in parent or now < parent['end'])
+        parent_id = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
+        if 'parent_task' in parent_id:
+            parent = todolist.find_one({'_id': ObjectId(parent_id['parent_task'])}, {'end': 1})
+        if (('parent_task' not in parent_id or 'end' not in parent or now < parent['end'])
                 and ('end_times' not in result['cycle'] or result['cycle']['end_times'] == 0
-                     or result['cycle']['total_times'] < result['cycle']['end_times'])):
-            if result['begin'] < now and result['is_finish'] < 1:
-                last = result['begin']
-                if result['cycle']['cyclicality'] == 3:
-                    result['begin'] = last + relativedelta(years=1)
-                elif result['cycle']['cyclicality'] == 2:
-                    result['begin'] = last + relativedelta(months=1)
-                elif result['cycle']['cyclicality'] == 0:
-                    result['begin'] = last + timedelta(days=1)
-                elif result['cycle']['cyclicality'] == 1:
-                    result['begin'] = last + timedelta(days=7)
-                if result['cycle']['type'] == 2:
-                    if result['is_finish'] < 0:
+                     or result['cycle']['type'] == 1 and result['cycle']['total_times'] < result['cycle']['end_times']
+                     or result['cycle']['type'] == 2 and result['cycle']['finish_times'] < result['cycle']['end_times']
+                )):
+            if result['cycle']['type'] == 1:
+                if result['begin'] < now:
+                    last = result['begin']
+                    if result['cycle']['cyclicality'] == 3:
+                        result['begin'] = last + relativedelta(years=1)
+                    elif result['cycle']['cyclicality'] == 2:
+                        result['begin'] = last + relativedelta(months=1)
+                    elif result['cycle']['cyclicality'] == 0:
+                        result['begin'] = last + timedelta(days=1)
+                    elif result['cycle']['cyclicality'] == 1:
+                        result['begin'] = last + timedelta(days=7)
+                    result['cycle']['total_times'] += 1
+                    result['is_finish'] = -1
+                    todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+            elif result['cycle']['type'] == 2:
+                if result['end'] < now:
+                    result['begin'] = result['end'] + relativedelta(seconds=1)
+                    if result['cycle']['cyclicality'] == 3:
+                        result['end'] = result['end'] + relativedelta(years=1)
+                    elif result['cycle']['cyclicality'] == 2:
+                        result['end'] = result['end'] + relativedelta(months=1)
+                    elif result['cycle']['cyclicality'] == 0:
+                        result['end'] = result['end'] + timedelta(days=1)
+                    elif result['cycle']['cyclicality'] == 1:
+                        result['end'] = result['end'] + timedelta(days=7)
+                    if result['is_finish'] == -1:
                         result['cycle']['finish_times'] = 0
                     else:
                         result['cycle']['finish_times'] += 1
-                elif result['cycle']['type'] == 1:
-                    result['cycle']['total_times'] += 1
-                result['is_finish'] = -1
-            todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+                    result['is_finish'] = -1
+                    todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
         return result
 
     def un_finish_once(self):
