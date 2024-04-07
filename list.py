@@ -206,6 +206,13 @@ class Ui_MainWindow(object):
         ui1.child_signal.connect(self.set_item)
         ui1.exec_()
         if self.item is not None:
+            if 'is_finish' not in self.item:
+                self.item['is_finish'] = -1
+            if item != self.root:
+                parent_id = self.get_id(item)
+                self.item["parent_task"] = ObjectId(parent_id)
+            self.item = self.new_day(self.item)
+            del self.item["parent_task"]
             node = CustomTreeWidgetItem(item)
             self.treeWidget.blockSignals(True)
             node.setText(0, self.item['title'])
@@ -229,8 +236,6 @@ class Ui_MainWindow(object):
             else:
                 node.setText(2, '')
             self.set_priority(node, self.item['priority'])
-            if 'is_finish' not in self.item:
-                self.item['is_finish'] = -1
             id = todolist.insert_one(self.item).inserted_id
             item_id.append((node, str(id)))
             if self.item['is_finish'] == 0:
@@ -271,6 +276,11 @@ class Ui_MainWindow(object):
             self.treeWidget.blockSignals(True)
             node.setText(0, self.item['title'])
             self.treeWidget.blockSignals(False)
+            if 'is_finish' not in self.item:
+                self.item['is_finish'] = -1
+            self.item['parent_task'] = ObjectId(item)
+            self.item = self.new_day(self.item)
+            del self.item['parent_task']
             if 'begin' in self.item:
                 node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
                 now = datetime.today()
@@ -296,8 +306,6 @@ class Ui_MainWindow(object):
             else:
                 node.setText(2, '')
             self.set_priority(node, self.item['priority'])
-            if 'is_finish' not in self.item:
-                self.item['is_finish'] = -1
             if self.item['is_finish'] == 0:
                 self.set_gray(node, False)
             elif self.item['is_finish'] == 1:
@@ -470,10 +478,14 @@ class Ui_MainWindow(object):
         if result['is_finish'] == 1 or result['cycle']['type'] < 1:
             return result
         now = datetime.today()
-        parent_id = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
-        if 'parent_task' in parent_id:
-            parent = todolist.find_one({'_id': ObjectId(parent_id['parent_task'])}, {'end': 1})
-        if (('parent_task' not in parent_id or 'end' not in parent or now < parent['end'])
+        parent = None
+        if "_id" in result:
+            parent_id = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
+            if 'parent_task' in parent_id:
+                parent = todolist.find_one({'_id': ObjectId(parent_id['parent_task'])}, {'end': 1})
+        elif 'parent_task' in result:
+            parent = todolist.find_one({'_id': ObjectId(result['parent_task'])}, {'end': 1})
+        if ((parent is None or 'end' not in parent or now < parent['end'])
                 and ('end_times' not in result['cycle'] or result['cycle']['end_times'] == 0
                      or result['cycle']['type'] == 1 and result['cycle']['total_times'] < result['cycle']['end_times']
                      or result['cycle']['type'] == 2 and result['cycle']['finish_times'] < result['cycle']['end_times']
@@ -491,7 +503,8 @@ class Ui_MainWindow(object):
                         result['begin'] = last + timedelta(days=7)
                     result['cycle']['total_times'] += 1
                     result['is_finish'] = -1
-                    todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+                    if "_id" in result:
+                        todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
             elif result['cycle']['type'] == 2:
                 if result['end'] < now:
                     result['begin'] = result['end'] + relativedelta(seconds=1)
@@ -508,7 +521,8 @@ class Ui_MainWindow(object):
                     else:
                         result['cycle']['finish_times'] += 1
                     result['is_finish'] = -1
-                    todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+                    if "_id" in result:
+                        todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
         return result
 
     def un_finish_once(self):
