@@ -212,7 +212,6 @@ class Ui_MainWindow(object):
                 parent_id = self.get_id(item)
                 self.item["parent_task"] = ObjectId(parent_id)
             self.item = self.new_day(self.item)
-            del self.item["parent_task"]
             node = CustomTreeWidgetItem(item)
             self.treeWidget.blockSignals(True)
             node.setText(0, self.item['title'])
@@ -253,7 +252,6 @@ class Ui_MainWindow(object):
                     todolist.update_one({'_id': ObjectId(parent_id)}, {'$addToSet': {'subtask': id}})
                 else:
                     todolist.update_one({'_id': ObjectId(parent_id)}, {'$set': {'subtask': [id]}})
-                todolist.update_one({'_id': ObjectId(id)}, {'$set': {'parent_task': ObjectId(parent_id)}})
                 parent = item
                 while parent != self.root:
                     self.set_state(parent)
