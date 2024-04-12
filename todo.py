@@ -246,12 +246,7 @@ class Ui_todo(QDialog):
         dic = dict()
         dic['title'] = self.lineEdit.text()
         text = self.textEdit.toPlainText()
-        if len(text) <= 255:
-            dic['content'] = text
-        else:
-            msg_box = QMessageBox(QMessageBox.Critical, 'error', '内容最长255个字符')
-            msg_box.exec_()
-            return
+        dic['content'] = text
         dic['priority'] = self.comboBox_3.currentIndex() + 1
         type = self.comboBox.currentIndex() - 1
         dic['cycle'] = {"type": type}
