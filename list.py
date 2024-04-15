@@ -158,7 +158,8 @@ class Ui_MainWindow(object):
                     node.setCheckState(0, Qt.PartiallyChecked)
                 else:
                     node.setCheckState(0, Qt.Unchecked)
-                no_all_finish = True
+                if node.foreground(1) != QtGui.QBrush(QtGui.QColor('gray')):
+                    no_all_finish = True
         return no_all_finish, node.checkState(0) == Qt.Unchecked
 
     def show_menu(self):

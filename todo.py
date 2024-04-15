@@ -174,7 +174,7 @@ class Ui_todo(QDialog):
         if self.old is not None:
             todolist = mongodb.MongoDBPool.get_mongodb_pool()
             old = todolist.find_one({'_id': ObjectId(self.old)})
-            if 'subtask' in old:
+            if 'subtask' in old and len(old['subtask']) > 0:
                 self.comboBox.setDisabled(True)
             self.lineEdit.setText(old['title'])
             self.textEdit.setText(old['content'])
