@@ -393,7 +393,7 @@ class Ui_todo(QDialog):
                 self.label_4.show()
                 self.dateEdit_2.show()
                 self.checkBox_2.show()
-                self.timeEdit_2.show()
+                # self.timeEdit_2.show()
             elif g == GROUP.FINISH:
                 self.label_6.show()
                 self.spinBox.show()
@@ -404,7 +404,7 @@ class Ui_todo(QDialog):
                 self.label_3.show()
                 self.dateEdit.show()
                 self.checkBox.show()
-                self.timeEdit.show()
+                # self.timeEdit.show()
             elif g == GROUP.END_TIMES:
                 self.label_10.show()
                 self.spinBox_3.show()
