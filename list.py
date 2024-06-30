@@ -188,14 +188,14 @@ class Ui_MainWindow(object):
         # roots = db.fetchall(sql)
         roots = todolist.find({'parent_task': None})
         for i in roots:
-            self.create_node(i, self.root, False)
+            self.create_node(i, self.root, 0)
         self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def create_node(self, i, root, hide):
         if i['cycle']['type'] > 0:
             self.new_day(i)
         node = CustomTreeWidgetItem(root)
-        if hide and i['is_finish'] == 1:
+        if hide > 0 and i['is_finish'] == 1:
             node.setHidden(True)
         item_id.append((node, str(i['_id'])))
         node.setText(0, i['title'])
@@ -218,14 +218,13 @@ class Ui_MainWindow(object):
             node.setText(2, '')
         self.set_priority(node, i['priority'])
         no_all_finish = False
-        hide = hide or i['hide_finish']
         if 'subtask' in i and len(i['subtask']) > 0:
             # son = mysql.get_son(i['id'])
             son = i['subtask']
             all_no_finish = True
             son = todolist.find({'_id': {'$in': son}})
             for j in son:
-                state1, state2 = self.create_node(j, node, hide)
+                state1, state2 = self.create_node(j, node, i['hide_finish'])
                 no_all_finish = no_all_finish or state1
                 all_no_finish = all_no_finish and state2
             if not all_no_finish:
@@ -248,7 +247,8 @@ class Ui_MainWindow(object):
                     node.setCheckState(0, Qt.Unchecked)
                 if node.foreground(1) != QtGui.QBrush(QtGui.QColor('gray')):
                     no_all_finish = True
-
+        if hide == 2 and node.foreground(1) == QtGui.QBrush(QtGui.QColor('gray')):
+            node.setHidden(True)
         self.treeWidget.sortItems(3, Qt.DescendingOrder)
         return no_all_finish, node.checkState(0) == Qt.Unchecked
 
@@ -275,30 +275,49 @@ class Ui_MainWindow(object):
                 action = menu.addAction('取消完成一次')
                 action.triggered.connect(self.un_finish_once)
         if item != self.root and item.childCount() != 0:
-            action = menu.addAction('自动展开')
-            action.triggered.connect(lambda: self.set_auto(True))
-            action = menu.addAction('手动展开')
-            action.triggered.connect(lambda: self.set_auto(False))
+            if result['expend'] == 0:
+                action = menu.addAction('下次启动时随当前展开')
+                action.triggered.connect(lambda: self.set_auto(False))
+            else:
+                action = menu.addAction('下次启动时随状态展开')
+                action.triggered.connect(lambda: self.set_auto(True))
         if item.childCount() != 0:
-            if item == self.root or not result['hide_finish']:
-                action = menu.addAction('隐藏已完成')
+            sub_menu = menu.addMenu('隐藏其余')
+            if item == self.root:
+                action = sub_menu.addAction('隐藏已完成')
                 action.triggered.connect(lambda: self.hide_finish(True))
-            if item == self.root or result['hide_finish']:
-                action = menu.addAction('显示已完成')
+                action = sub_menu.addAction('显示已完成')
                 action.triggered.connect(lambda: self.hide_finish(False))
+                action = sub_menu.addAction('隐藏灰色')
+                action.triggered.connect(lambda: self.hide_gray(True))
+                action = sub_menu.addAction('显示灰色')
+                action.triggered.connect(lambda: self.hide_gray(False))
+            elif result['hide_finish'] == 0:
+                action = sub_menu.addAction('隐藏已完成')
+                action.triggered.connect(lambda: self.hide_finish(True))
+                action = sub_menu.addAction('隐藏灰色')
+                action.triggered.connect(lambda: self.hide_gray(True))
+            elif result['hide_finish'] == 1:
+                action = sub_menu.addAction('显示已完成')
+                action.triggered.connect(lambda: self.hide_finish(False))
+                action = sub_menu.addAction('隐藏灰色')
+                action.triggered.connect(lambda: self.hide_gray(True))
+            elif result['hide_finish'] == 2:
+                action = sub_menu.addAction('显示灰色')
+                action.triggered.connect(lambda: self.hide_gray(False))
         menu.exec_(QCursor.pos())
 
     def hide_finish(self, flag):
         node = self.treeWidget.currentItem()
         id = get_id(node)
         if flag:
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': True}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': 1}})
             for i in range(node.childCount()):
                 kid = node.child(i)
                 if kid.checkState(0) == Qt.Checked:
                     kid.setHidden(True)
         else:
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': False}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': 0}})
             for i in range(node.childCount()):
                 kid = node.child(i)
                 kid.setHidden(False)
@@ -667,6 +686,21 @@ class Ui_MainWindow(object):
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 0}})
         else:
             todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 1}})
+
+    def hide_gray(self, flag):
+        node = self.treeWidget.currentItem()
+        id = get_id(node)
+        if flag:
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': 2}})
+            for i in range(node.childCount()):
+                kid = node.child(i)
+                if kid.foreground(3) == QtGui.QBrush(QtGui.QColor('gray')):
+                    kid.setHidden(True)
+        else:
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'hide_finish': 0}})
+            for i in range(node.childCount()):
+                kid = node.child(i)
+                kid.setHidden(False)
 
 
 class MyWidget(QMainWindow):
