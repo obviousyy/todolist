@@ -233,7 +233,7 @@ class Ui_MainWindow(object):
                 node.setCheckState(0, Qt.Unchecked)
             if i['is_finish'] == 1:
                 self.finish_node(str(i['_id']), False)
-            if i['expend'] == 1 or (i['expend'] == 0 and no_all_finish):
+            if i['expand'] == 1 or (i['expand'] == 0 and no_all_finish):
                 self.treeWidget.expandItem(node)
         else:
             if i['is_finish'] == 1:
@@ -249,7 +249,6 @@ class Ui_MainWindow(object):
                     no_all_finish = True
         if hide == 2 and node.foreground(1) == QtGui.QBrush(QtGui.QColor('gray')):
             node.setHidden(True)
-        self.treeWidget.sortItems(3, Qt.DescendingOrder)
         return no_all_finish, node.checkState(0) == Qt.Unchecked
 
     def show_menu(self):
@@ -275,7 +274,7 @@ class Ui_MainWindow(object):
                 action = menu.addAction('取消完成一次')
                 action.triggered.connect(self.un_finish_once)
         if item != self.root and item.childCount() != 0:
-            if result['expend'] == 0:
+            if result['expand'] == 0:
                 action = menu.addAction('下次启动时随当前展开')
                 action.triggered.connect(lambda: self.set_auto(False))
             else:
@@ -330,8 +329,8 @@ class Ui_MainWindow(object):
 
     def add_node(self):
         item = self.treeWidget.currentItem()
-        parent_id = get_id(item)
-        parent = todolist.find_one({'_id': ObjectId(parent_id)},
+        parent_id = ObjectId(get_id(item))
+        parent = todolist.find_one({'_id': parent_id},
                                    {'_id': 0, 'begin': 1, 'end': 1, 'cycle.type': 1, 'cycle.cyclicality': 1})
         ui1 = todo.Ui_todo(self.app, None, True, parent)
         ui1.show()
@@ -342,14 +341,13 @@ class Ui_MainWindow(object):
             if 'is_finish' not in self.item:
                 self.item['is_finish'] = -1
             if item != self.root:
-                parent_id = get_id(item)
-                self.item["parent_task"] = ObjectId(parent_id)
+                self.item["parent_task"] = parent_id
             self.item = self.new_day(self.item)
             node = CustomTreeWidgetItem(item)
             self.treeWidget.blockSignals(True)
             node.setText(0, self.item['title'])
             self.treeWidget.blockSignals(False)
-            self.item['expend'] = 0
+            self.item['expand'] = 0
             if 'begin' in self.item:
                 node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
                 now = datetime.today()
@@ -368,6 +366,7 @@ class Ui_MainWindow(object):
             else:
                 node.setText(2, '')
             self.set_priority(node, self.item['priority'])
+            self.item['hide_finish'] = 0
             id = todolist.insert_one(self.item).inserted_id
             item_id.append((node, str(id)))
             if self.item['is_finish'] == 0:
@@ -379,18 +378,17 @@ class Ui_MainWindow(object):
                 node.setCheckState(0, Qt.Unchecked)
                 self.treeWidget.blockSignals(False)
             if item != self.root:
-                parent_id = get_id(item)
-                subtask = todolist.find_one({'_id': ObjectId(parent_id)}, {'_id': 0, 'subtask': 1})
+                subtask = todolist.find_one({'_id': parent_id}, {'_id': 0, 'subtask': 1})
                 if 'subtask' in subtask and len(subtask['subtask']) > 0:
-                    todolist.update_one({'_id': ObjectId(parent_id)}, {'$addToSet': {'subtask': id}})
+                    todolist.update_one({'_id': parent_id}, {'$addToSet': {'subtask': id}})
                 else:
-                    todolist.update_one({'_id': ObjectId(parent_id)}, {'$set': {'subtask': [id]}})
+                    todolist.update_one({'_id': parent_id}, {'$set': {'subtask': [id]}})
                 parent = item
                 while parent != self.root:
                     self.set_state(parent)
+                    self.treeWidget.expandItem(parent)
                     parent = parent.parent()
             self.item = None
-            self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def edit_node(self):
         node = self.treeWidget.currentItem()
@@ -442,16 +440,15 @@ class Ui_MainWindow(object):
                 self.set_gray(node, False)
             elif self.item['is_finish'] == 1:
                 self.finish_node(get_id(node), True)
-            id = get_id(self.treeWidget.currentItem())
+            id = ObjectId(old)
             # mysql.edit_point(id, self.item['title'], self.item['content'], self.item['time'], self.item['priority'], self.item['count'])
             if 'begin' not in self.item:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'begin': ""}})
+                todolist.update_one({'_id': id}, {'$unset': {'begin': ""}})
             if 'end' not in self.item:
-                todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'end': ""}})
-            todolist.update_one({'_id': ObjectId(id)}, {'$unset': {'cycle': ""}})
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': self.item})
+                todolist.update_one({'_id': id}, {'$unset': {'end': ""}})
+            todolist.update_one({'_id': id}, {'$unset': {'cycle': ""}})
+            todolist.update_one({'_id': id}, {'$set': self.item})
             self.item = None
-            self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def delete_node(self):
         node = self.treeWidget.currentItem()
@@ -488,7 +485,6 @@ class Ui_MainWindow(object):
         parent = node.parent()
         if parent != self.root and parent.checkState(0) != Qt.Checked:
             self.set_state(parent)
-        self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def set_gray(self, node, flag):
         self.treeWidget.blockSignals(True)
@@ -537,7 +533,6 @@ class Ui_MainWindow(object):
             while parent != self.root:
                 self.set_state(parent)
                 parent = parent.parent()
-            self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     @staticmethod
     def set_priority(node, value):
@@ -683,9 +678,9 @@ class Ui_MainWindow(object):
         node = self.treeWidget.currentItem()
         id = get_id(node)
         if flag:
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 0}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expand': 0}})
         else:
-            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expend': 1}})
+            todolist.update_one({'_id': ObjectId(id)}, {'$set': {'expand': 1}})
 
     def hide_gray(self, flag):
         node = self.treeWidget.currentItem()
@@ -707,7 +702,7 @@ class MyWidget(QMainWindow):
     def closeEvent(self, event):
         for (node, id) in item_id:
             if node.isExpanded():
-                todolist.update_one({'_id': ObjectId(id), 'expend': {'$ne': 0}}, {'$set': {'expend': 1}})
+                todolist.update_one({'_id': ObjectId(id), 'expand': {'$ne': 0}}, {'$set': {'expand': 1}})
             else:
-                todolist.update_one({'_id': ObjectId(id), 'expend': {'$ne': 0}}, {'$set': {'expend': -1}})
+                todolist.update_one({'_id': ObjectId(id), 'expand': {'$ne': 0}}, {'$set': {'expand': -1}})
         event.accept()
