@@ -24,7 +24,7 @@
         "end": ISODate("2024-03-04T01:35:00.000Z"),
         "is_finish": NumberInt("0"),
         "parent_task": ObjectId("65df4d1be086fedfefdf40bc"),
-        "expend": NumberInt("0")
+        "expand": NumberInt("0")
     }
 
     {
@@ -37,11 +37,12 @@
         },
         "is_finish": NumberInt("-1"),
         "subtask": [
-            ObjectId("65df49ffe086fedfefdf40a2"),
             ObjectId("65df4a11e086fedfefdf40a3"),
             ObjectId("65ee5a2f2a9117d76dc1cf80")
         ],
-        "expend": NumberInt("-1")
+        "parent_task": ObjectId("667120770efca83e2110fbcb"),
+        "hide_finish": NumberInt("0"),
+        "expand": NumberInt("-1")
     }
 
 ## 2.双击查看，右键其他功能
