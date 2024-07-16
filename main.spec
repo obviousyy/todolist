@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['main.py', 'list.py', 'mongodb.py', 'todo.py'],
+    ['main.py', 'list.py', 'json2database.py', 'todo.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('D:\\others\\project\\todolist\\data.json', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -20,7 +20,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='todolist1',
+    name='todolist',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

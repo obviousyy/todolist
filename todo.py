@@ -9,14 +9,16 @@
 from datetime import timedelta, datetime
 
 from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtCore import pyqtSignal, Qt, QDate, QTime
+from PyQt5.QtCore import pyqtSignal, Qt, QDate, QTime, QDateTime
 from PyQt5.QtWidgets import QDialog, QMessageBox
-from bson import ObjectId
+# from bson import ObjectId
 from dateutil.relativedelta import relativedelta
 
-import mongodb
+# import mongodb
 
 from enum import Enum
+
+
 class GROUP(Enum):
     END = 1
     CYCLE = 2
@@ -28,12 +30,13 @@ class GROUP(Enum):
 class Ui_todo(QDialog):
     child_signal = pyqtSignal(dict)
 
-    def __init__(self, app, old, is_edit, parent):
+    def __init__(self, app, old, is_edit, parent, todolist):
         super(Ui_todo, self).__init__()
         self.app = app
         self.old = old
         self.is_edit = is_edit
         self.parent = parent  # begin, end, type
+        self.todolist = todolist
         self.setupUi(self)
 
     def setupUi(self, Dialog):
@@ -172,8 +175,9 @@ class Ui_todo(QDialog):
         self.comboBox.activated['int'].connect(self.cycle)
 
         if self.old is not None:
-            todolist = mongodb.MongoDBPool.get_mongodb_pool()
-            old = todolist.find_one({'_id': ObjectId(self.old)})
+            # todolist = mongodb.MongoDBPool.get_mongodb_pool()
+            # old = todolist.find_one({'_id': ObjectId(self.old)})
+            old = self.todolist.find_one({'_id': self.old})
             if 'subtask' in old and len(old['subtask']) > 0:
                 self.comboBox.setDisabled(True)
             self.lineEdit.setText(old['title'])
@@ -192,8 +196,11 @@ class Ui_todo(QDialog):
             if 1 >= old['cycle']['type'] >= 0:
                 self.spinBox_2.setValue(int(old['cycle']['total_times']))
             if 'begin' in old:
-                self.dateEdit.setDate(QDate.fromString(old['begin'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
-                self.timeEdit.setTime(QTime.fromString(old['begin'].strftime('%H:%M'), 'hh:mm'))
+                # self.dateEdit.setDate(QDate.fromString(old['begin'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
+                # self.timeEdit.setTime(QTime.fromString(old['begin'].strftime('%H:%M'), 'hh:mm'))
+                dt = QDateTime.fromString(old['begin'], 'yyyy-MM-dd HH:mm:ss')
+                self.dateEdit.setDate(dt.date())
+                self.timeEdit.setTime(dt.time())
                 self.checkBox.setCheckState(Qt.Checked)
             else:
                 if not self.is_edit:
@@ -201,8 +208,11 @@ class Ui_todo(QDialog):
                 else:
                     self.show_or_hide(True, GROUP.BEGIN)
             if 'end' in old:
-                self.dateEdit_2.setDate(QDate.fromString(old['end'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
-                self.timeEdit_2.setTime(QTime.fromString(old['end'].strftime('%H:%M'), 'hh:mm'))
+                # self.dateEdit_2.setDate(QDate.fromString(old['end'].strftime('%Y-%m-%d'), 'yyyy-MM-dd'))
+                # self.timeEdit_2.setTime(QTime.fromString(old['end'].strftime('%H:%M'), 'hh:mm'))
+                dt = QDateTime.fromString(old['end'], 'yyyy-MM-dd HH:mm:ss')
+                self.dateEdit_2.setDate(dt.date())
+                self.timeEdit_2.setTime(dt.time())
                 self.checkBox_2.setCheckState(Qt.Checked)
             else:
                 if self.is_edit and old['cycle']['type'] != 1:
@@ -258,8 +268,9 @@ class Ui_todo(QDialog):
         if type > 0 and self.spinBox_3.value() > 0:
             dic['cycle']['end_times'] = self.spinBox_3.value()
         if type <= 0:
-            begin_time = begin_date + ' ' + begin_time
-            begin_time = datetime.strptime(begin_time, '%Y-%m-%d %H:%M')
+            # begin_time = begin_date + ' ' + begin_time
+            # begin_time = datetime.strptime(begin_time, '%Y-%m-%d %H:%M')
+            begin_time = begin_date + ' ' + begin_time + ':00'
             if begin_date != '2000-01-01':
                 if self.parent is None or 'begin' not in self.parent or begin_time >= self.parent['begin']:
                     dic['begin'] = begin_time
@@ -272,8 +283,9 @@ class Ui_todo(QDialog):
                 end_time = self.timeEdit_2.dateTime().toString('hh:mm')
             else:
                 end_time = '00:00'
-            end_time = end_date + ' ' + end_time
-            end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+            # end_time = end_date + ' ' + end_time
+            # end_time = datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+            end_time = end_date + ' ' + end_time + ':00'
             if end_date != '2000-01-01':
                 if self.parent is None or 'end' not in self.parent or end_time <= self.parent['end']:
                     if end_time > begin_time:
@@ -310,7 +322,7 @@ class Ui_todo(QDialog):
                     elif slot == 1:
                         begin_date = begin_date - timedelta(days=begin_date.weekday())
                 dic['begin'] = begin_date.strftime('%Y-%m-%d') + ' ' + begin_time
-                dic['begin'] = datetime.strptime(dic['begin'], '%Y-%m-%d %H:%M')
+                # dic['begin'] = datetime.strptime(dic['begin'], '%Y-%m-%d %H:%M')
             else:
                 msg_box = QMessageBox(QMessageBox.Critical, 'error', '开始时间需比父任务晚或相同')
                 msg_box.exec_()
@@ -324,7 +336,7 @@ class Ui_todo(QDialog):
             elif slot == 1:
                 end_date = begin_date + timedelta(days=7)
             dic['end'] = end_date.strftime('%Y-%m-%d') + ' ' + begin_time
-            dic['end'] = datetime.strptime(dic['end'], '%Y-%m-%d %H:%M')
+            # dic['end'] = datetime.strptime(dic['end'], '%Y-%m-%d %H:%M')
             if type == 1:
                 if flag:
                     dic['begin'] = dic['end']
