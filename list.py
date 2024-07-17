@@ -676,31 +676,34 @@ class Ui_MainWindow(object):
                 )):
             if result['cycle']['type'] == 1:
                 if result['begin'] < now:
-                    last = result['begin']
+                    last = datetime.strptime(result['begin'], '%Y-%m-%d %H:%M:%S')
                     if result['cycle']['cyclicality'] == 3:
-                        result['begin'] = last + relativedelta(years=1)
+                        last = last + relativedelta(years=1)
                     elif result['cycle']['cyclicality'] == 2:
-                        result['begin'] = last + relativedelta(months=1)
+                        last = last + relativedelta(months=1)
                     elif result['cycle']['cyclicality'] == 0:
-                        result['begin'] = last + timedelta(days=1)
+                        last = last + timedelta(days=1)
                     elif result['cycle']['cyclicality'] == 1:
-                        result['begin'] = last + timedelta(days=7)
+                        last = last + timedelta(days=7)
+                    result['begin'] = last.strftime('%Y-%m-%d %H:%M:%S')
                     result['cycle']['total_times'] += 1
                     result['is_finish'] = -1
                     if "_id" in result:
                         # todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
-                        todolist.update_one({'_id': result['_id']}, {'$set': result})
+                        todolist.update_one({'_id': result['_id']}, ['$set', result])
             elif result['cycle']['type'] == 2:
                 if result['end'] < now:
-                    result['begin'] = result['end'] + relativedelta(seconds=1)
+                    last = datetime.strptime(result['end'], '%Y-%m-%d %H:%M:%S')
+                    result['begin'] = (last + relativedelta(seconds=1)).strftime('%Y-%m-%d %H:%M:%S')
                     if result['cycle']['cyclicality'] == 3:
-                        result['end'] = result['end'] + relativedelta(years=1)
+                        last = last + relativedelta(years=1)
                     elif result['cycle']['cyclicality'] == 2:
-                        result['end'] = result['end'] + relativedelta(months=1)
+                        last = last + relativedelta(months=1)
                     elif result['cycle']['cyclicality'] == 0:
-                        result['end'] = result['end'] + timedelta(days=1)
+                        last = last + timedelta(days=1)
                     elif result['cycle']['cyclicality'] == 1:
-                        result['end'] = result['end'] + timedelta(days=7)
+                        last = last + timedelta(days=7)
+                    result['end'] = last.strftime('%Y-%m-%d %H:%M:%S')
                     if result['is_finish'] == -1:
                         result['cycle']['finish_times'] = 0
                     else:
