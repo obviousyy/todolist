@@ -321,7 +321,7 @@ class Ui_todo(QDialog):
                         begin_date = datetime(begin_date.year, begin_date.month, 1)
                     elif slot == 1:
                         begin_date = begin_date - timedelta(days=begin_date.weekday())
-                dic['begin'] = begin_date.strftime('%Y-%m-%d') + ' ' + begin_time
+                dic['begin'] = begin_date.strftime('%Y-%m-%d') + ' ' + begin_time + ':00'
                 # dic['begin'] = datetime.strptime(dic['begin'], '%Y-%m-%d %H:%M')
             else:
                 msg_box = QMessageBox(QMessageBox.Critical, 'error', '开始时间需比父任务晚或相同')
@@ -335,7 +335,7 @@ class Ui_todo(QDialog):
                 end_date = begin_date + timedelta(days=1)
             elif slot == 1:
                 end_date = begin_date + timedelta(days=7)
-            dic['end'] = end_date.strftime('%Y-%m-%d') + ' ' + begin_time
+            dic['end'] = end_date.strftime('%Y-%m-%d') + ' ' + begin_time + ':00'
             # dic['end'] = datetime.strptime(dic['end'], '%Y-%m-%d %H:%M')
             if type == 1:
                 if flag:
