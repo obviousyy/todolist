@@ -146,6 +146,67 @@ def get_node(id):
             return i[0]
 
 
+def new_day(result):
+    if result['is_finish'] == 1 or result['cycle']['type'] < 1:
+        return result
+    now = datetime.today()
+    now = now.strftime('%Y-%m-%d %H:%M:%S')
+    parent = None
+    if "_id" in result:
+        # parent_id = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
+        parent_id = todolist.find_one({'_id': result['_id']})
+        if 'parent_task' in parent_id:
+            # parent = todolist.find_one({'_id': ObjectId(parent_id['parent_task'])}, {'end': 1})
+            parent = todolist.find_one({'_id': parent_id['parent_task']})
+    elif 'parent_task' in result:
+        # parent = todolist.find_one({'_id': ObjectId(result['parent_task'])}, {'end': 1})
+        parent = todolist.find_one({'_id': result['parent_task']})
+    if ((parent is None or 'end' not in parent or now < parent['end'])
+            and ('end_times' not in result['cycle'] or result['cycle']['end_times'] == 0
+                 or result['cycle']['type'] == 1 and result['cycle']['total_times'] < result['cycle']['end_times']
+                 or result['cycle']['type'] == 2 and result['cycle']['finish_times'] < result['cycle']['end_times']
+            )):
+        if result['cycle']['type'] == 1:
+            if result['begin'] <= now:
+                last = datetime.strptime(result['begin'], '%Y-%m-%d %H:%M:%S')
+                if result['cycle']['cyclicality'] == 3:
+                    last = last + relativedelta(years=1)
+                elif result['cycle']['cyclicality'] == 2:
+                    last = last + relativedelta(months=1)
+                elif result['cycle']['cyclicality'] == 0:
+                    last = last + timedelta(days=1)
+                elif result['cycle']['cyclicality'] == 1:
+                    last = last + timedelta(days=7)
+                result['begin'] = last.strftime('%Y-%m-%d %H:%M:%S')
+                result['cycle']['total_times'] += 1
+                result['is_finish'] = -1
+                if "_id" in result:
+                    # todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+                    todolist.update_one({'_id': result['_id']}, ['$set', result])
+        elif result['cycle']['type'] == 2:
+            if result['end'] < now:
+                last = datetime.strptime(result['end'], '%Y-%m-%d %H:%M:%S')
+                result['begin'] = (last + relativedelta(seconds=1)).strftime('%Y-%m-%d %H:%M:%S')
+                if result['cycle']['cyclicality'] == 3:
+                    last = last + relativedelta(years=1)
+                elif result['cycle']['cyclicality'] == 2:
+                    last = last + relativedelta(months=1)
+                elif result['cycle']['cyclicality'] == 0:
+                    last = last + timedelta(days=1)
+                elif result['cycle']['cyclicality'] == 1:
+                    last = last + timedelta(days=7)
+                result['end'] = last.strftime('%Y-%m-%d %H:%M:%S')
+                if result['is_finish'] == -1:
+                    result['cycle']['finish_times'] = 0
+                else:
+                    result['cycle']['finish_times'] += 1
+                result['is_finish'] = -1
+                if "_id" in result:
+                    # todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
+                    todolist.update_one({'_id': result['_id']}, ['$set', result])
+    return result
+
+
 class Ui_MainWindow(object):
     def __init__(self, app):
         super(Ui_MainWindow, self).__init__()
@@ -206,8 +267,6 @@ class Ui_MainWindow(object):
         self.treeWidget.sortItems(3, Qt.DescendingOrder)
 
     def create_node(self, i, root, hide):
-        if i['cycle']['type'] > 0:
-            self.new_day(i)
         node = CustomTreeWidgetItem(root)
         if hide > 0 and i['is_finish'] == 1:
             node.setHidden(True)
@@ -217,7 +276,7 @@ class Ui_MainWindow(object):
             # node.setText(1, i['begin'].strftime('%Y-%m-%d %H:%M'))
             node.setText(1, i['begin'])
             now = datetime.today()
-            now = now.strftime('%Y-%m-%d %H:%M')
+            now = now.strftime('%Y-%m-%d %H:%M:%S')
             if (i['cycle']['type'] != 1 and i['begin'] > now
                     or i['cycle']['type'] == 1 and i['cycle']['total_times'] == 0):
                 self.treeWidget.blockSignals(True)
@@ -365,7 +424,7 @@ class Ui_MainWindow(object):
                 self.item['is_finish'] = -1
             if item != self.root:
                 self.item["parent_task"] = parent_id
-            self.item = self.new_day(self.item)
+            self.item = new_day(self.item)
             node = CustomTreeWidgetItem(item)
             self.treeWidget.blockSignals(True)
             node.setText(0, self.item['title'])
@@ -375,7 +434,7 @@ class Ui_MainWindow(object):
                 # node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
                 node.setText(1, self.item['begin'])
                 now = datetime.today()
-                now = now.strftime('%Y-%m-%d %H:%M')
+                now = now.strftime('%Y-%m-%d %H:%M:%S')
                 if (self.item['cycle']['type'] != 1 and self.item['begin'] > now
                         or self.item['cycle']['type'] == 1 and self.item['cycle']['total_times'] == 0):
                     self.treeWidget.blockSignals(True)
@@ -441,13 +500,13 @@ class Ui_MainWindow(object):
                 self.item['is_finish'] = -1
             # self.item['parent_task'] = ObjectId(item)
             self.item['parent_task'] = item
-            self.item = self.new_day(self.item)
+            self.item = new_day(self.item)
             del self.item['parent_task']
             if 'begin' in self.item:
                 # node.setText(1, self.item['begin'].strftime('%Y-%m-%d %H:%M'))
                 node.setText(1, self.item['begin'])
                 now = datetime.today()
-                now = now.strftime('%Y-%m-%d %H:%M')
+                now = now.strftime('%Y-%m-%d %H:%M:%S')
                 if (self.item['cycle']['type'] != 1 and self.item['begin'] > now
                         or self.item['cycle']['type'] == 1 and self.item['cycle']['total_times'] == 0):
                     self.treeWidget.blockSignals(True)
@@ -654,66 +713,6 @@ class Ui_MainWindow(object):
         # todolist.update_one({'_id': ObjectId(id)}, {'$inc': {'cycle.finish_times': 1}})
         todolist.update_one({'_id': id}, ['$inc', {'cycle.finish_times': 1}])
 
-    def new_day(self, result):
-        if result['is_finish'] == 1 or result['cycle']['type'] < 1:
-            return result
-        now = datetime.today()
-        now = now.strftime('%Y-%m-%d %H:%M')
-        parent = None
-        if "_id" in result:
-            # parent_id = todolist.find_one({'_id': ObjectId(result['_id'])}, {'parent_task': 1})
-            parent_id = todolist.find_one({'_id': result['_id']})
-            if 'parent_task' in parent_id:
-                # parent = todolist.find_one({'_id': ObjectId(parent_id['parent_task'])}, {'end': 1})
-                parent = todolist.find_one({'_id': parent_id['parent_task']})
-        elif 'parent_task' in result:
-            # parent = todolist.find_one({'_id': ObjectId(result['parent_task'])}, {'end': 1})
-            parent = todolist.find_one({'_id': result['parent_task']})
-        if ((parent is None or 'end' not in parent or now < parent['end'])
-                and ('end_times' not in result['cycle'] or result['cycle']['end_times'] == 0
-                     or result['cycle']['type'] == 1 and result['cycle']['total_times'] < result['cycle']['end_times']
-                     or result['cycle']['type'] == 2 and result['cycle']['finish_times'] < result['cycle']['end_times']
-                )):
-            if result['cycle']['type'] == 1:
-                if result['begin'] < now:
-                    last = datetime.strptime(result['begin'], '%Y-%m-%d %H:%M:%S')
-                    if result['cycle']['cyclicality'] == 3:
-                        last = last + relativedelta(years=1)
-                    elif result['cycle']['cyclicality'] == 2:
-                        last = last + relativedelta(months=1)
-                    elif result['cycle']['cyclicality'] == 0:
-                        last = last + timedelta(days=1)
-                    elif result['cycle']['cyclicality'] == 1:
-                        last = last + timedelta(days=7)
-                    result['begin'] = last.strftime('%Y-%m-%d %H:%M:%S')
-                    result['cycle']['total_times'] += 1
-                    result['is_finish'] = -1
-                    if "_id" in result:
-                        # todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
-                        todolist.update_one({'_id': result['_id']}, ['$set', result])
-            elif result['cycle']['type'] == 2:
-                if result['end'] < now:
-                    last = datetime.strptime(result['end'], '%Y-%m-%d %H:%M:%S')
-                    result['begin'] = (last + relativedelta(seconds=1)).strftime('%Y-%m-%d %H:%M:%S')
-                    if result['cycle']['cyclicality'] == 3:
-                        last = last + relativedelta(years=1)
-                    elif result['cycle']['cyclicality'] == 2:
-                        last = last + relativedelta(months=1)
-                    elif result['cycle']['cyclicality'] == 0:
-                        last = last + timedelta(days=1)
-                    elif result['cycle']['cyclicality'] == 1:
-                        last = last + timedelta(days=7)
-                    result['end'] = last.strftime('%Y-%m-%d %H:%M:%S')
-                    if result['is_finish'] == -1:
-                        result['cycle']['finish_times'] = 0
-                    else:
-                        result['cycle']['finish_times'] += 1
-                    result['is_finish'] = -1
-                    if "_id" in result:
-                        # todolist.update_one({'_id': ObjectId(result['_id'])}, {'$set': result})
-                        todolist.update_one({'_id': result['_id']}, ['$set', result])
-        return result
-
     def un_finish_once(self):
         node = self.treeWidget.currentItem()
         id = get_id(node)
@@ -774,9 +773,31 @@ class MyWidget(QMainWindow):
         for (node, id) in item_id:
             if node.isExpanded():
                 # todolist.update_one({'_id': ObjectId(id), 'expand': {'$ne': 0}}, {'$set': {'expand': 1}})
-                todolist.update_one({'_id': id, 'expand': {'$ne': 0}}, ['$set', {'expand': 1}])
+                todolist.update_one({'_id': id, 'expand': ['$ne', 0]}, ['$set', {'expand': 1}])
             else:
                 # todolist.update_one({'_id': ObjectId(id), 'expand': {'$ne': 0}}, {'$set': {'expand': -1}})
-                todolist.update_one({'_id': id, 'expand': {'$ne': 0}}, ['$set', {'expand': -1}])
+                todolist.update_one({'_id': id, 'expand': ['$ne', 0]}, ['$set', {'expand': -1}])
         todolist.save()
+        event.accept()
+
+    def showEvent(self, event):
+        for (node, id) in item_id:
+            if id is None:
+                continue
+            res = todolist.find_one({'_id': id})
+            if res['is_finish'] != 1 and 'begin' in res:
+                new_day(res)
+                if res['is_finish'] == -1:
+                    node.setText(1, res['begin'])
+                    if 'end' in res:
+                        node.setText(2, res['end'])
+                    if 'finish_times' in res['cycle'] and res['cycle']['finish_times'] > 0:
+                        node.setCheckState(0, Qt.PartiallyChecked)
+                    now = datetime.today()
+                    now = now.strftime('%Y-%m-%d %H:%M:%S')
+                    if res['begin'] <= now:
+                        node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
+                        node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
+                        node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
+                        node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
         event.accept()
