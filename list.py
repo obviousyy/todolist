@@ -795,7 +795,7 @@ class MyWidget(QMainWindow):
                         node.setCheckState(0, Qt.PartiallyChecked)
                     now = datetime.today()
                     now = now.strftime('%Y-%m-%d %H:%M:%S')
-                    if res['begin'] <= now:
+                    if res['begin'] <= now or res['cycle']['type'] == 1 and res['cycle']['finish_times'] < res['cycle']['total_times']:
                         node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
                         node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
                         node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
