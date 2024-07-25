@@ -207,6 +207,22 @@ def new_day(result):
     return result
 
 
+def set_priority(node, value):
+    if value == 1:
+        text = "没空不做"
+    elif value == 2:
+        text = "有空再做"
+    elif value == 3:
+        text = "早做早超生"
+    elif value == 4:
+        text = "不可忘记"
+    elif value == 5:
+        text = "急急急"
+    elif value == 0:
+        text = "已完成"
+    node.setText(3, text)
+
+
 class Ui_MainWindow(object):
     def __init__(self, app):
         super(Ui_MainWindow, self).__init__()
@@ -292,7 +308,7 @@ class Ui_MainWindow(object):
             node.setText(2, i['end'])
         else:
             node.setText(2, '')
-        self.set_priority(node, i['priority'])
+        set_priority(node, i['priority'])
         no_all_finish = False
         if 'subtask' in i and len(i['subtask']) > 0:
             # son = mysql.get_son(i['id'])
@@ -450,7 +466,7 @@ class Ui_MainWindow(object):
                 node.setText(2, self.item['end'])
             else:
                 node.setText(2, '')
-            self.set_priority(node, self.item['priority'])
+            set_priority(node, self.item['priority'])
             self.item['hide_finish'] = 0
             # _id = todolist.insert_one(self.item).inserted_id
             _id = todolist.insert_one(self.item)
@@ -529,7 +545,7 @@ class Ui_MainWindow(object):
                 node.setText(2, self.item['end'])
             else:
                 node.setText(2, '')
-            self.set_priority(node, self.item['priority'])
+            set_priority(node, self.item['priority'])
             if self.item['is_finish'] == 0:
                 self.set_gray(node, False)
             elif self.item['is_finish'] == 1:
@@ -622,7 +638,7 @@ class Ui_MainWindow(object):
                 # priority = mysql.get_priority(id)
                 # result = todolist.find_one({'_id': ObjectId(id)})
                 result = todolist.find_one({'_id': id})
-                self.set_priority(node, result['priority'])
+                set_priority(node, result['priority'])
                 # mysql.set_priority(id, 0)
                 if 0 <= result['cycle']['type'] < 2:
                     if result['cycle']['finish_times'] > 0:
@@ -643,22 +659,6 @@ class Ui_MainWindow(object):
             while parent != self.root:
                 self.set_state(parent)
                 parent = parent.parent()
-
-    @staticmethod
-    def set_priority(node, value):
-        if value == 1:
-            text = "没空不做"
-        elif value == 2:
-            text = "有空再做"
-        elif value == 3:
-            text = "早做早超生"
-        elif value == 4:
-            text = "不可忘记"
-        elif value == 5:
-            text = "急急急"
-        elif value == 0:
-            text = "已完成"
-        node.setText(3, text)
 
     def show_assi(self):
         old = get_id(self.treeWidget.currentItem())
@@ -726,7 +726,7 @@ class Ui_MainWindow(object):
             self.treeWidget.blockSignals(False)
         elif result['cycle']['finish_times'] == result['cycle']['total_times']:
             result['cycle']['finish_times'] -= 1
-            self.set_priority(node, result['priority'])
+            set_priority(node, result['priority'])
             self.treeWidget.blockSignals(True)
             node.setForeground(0, QtGui.QBrush(QtGui.QColor('black')))
             node.setCheckState(0, Qt.PartiallyChecked)
@@ -800,4 +800,5 @@ class MyWidget(QMainWindow):
                         node.setForeground(1, QtGui.QBrush(QtGui.QColor('black')))
                         node.setForeground(2, QtGui.QBrush(QtGui.QColor('black')))
                         node.setForeground(3, QtGui.QBrush(QtGui.QColor('black')))
+                        set_priority(node, res['priority'])
         event.accept()
