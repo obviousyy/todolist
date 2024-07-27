@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+import sys
 from datetime import datetime, timedelta
 
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -131,19 +133,17 @@ class CustomTreeWidget(QtWidgets.QTreeWidget):
                     self.old_parent.setCheckState(0, Qt.Unchecked)
 
 
-item_id = list()
+item_id = dict()
 
 
 def get_id(node):
-    for i in item_id:
-        if i[0] == node:
-            return i[1]
+    for key, val in item_id.items():
+        if val == node:
+            return key
 
 
 def get_node(id):
-    for i in item_id:
-        if i[1] == id:
-            return i[0]
+    return item_id[id]
 
 
 def new_day(result):
@@ -242,7 +242,7 @@ class Ui_MainWindow(object):
         self.treeWidget.setObjectName("treeWidget")
         item_0 = QtWidgets.QTreeWidgetItem(self.treeWidget)
         item_0.setText(0, 'self')
-        item_id.append((item_0, None))
+        item_id[None] = item_0
         self.root = item_0
         self.treeWidget.setHeaderLabels(['概要', '开始时间', '结束时间', '优先级'])
         self.horizontalLayout.addWidget(self.treeWidget)
@@ -286,7 +286,7 @@ class Ui_MainWindow(object):
         node = CustomTreeWidgetItem(root)
         if hide > 0 and i['is_finish'] == 1:
             node.setHidden(True)
-        item_id.append((node, str(i['_id'])))
+        item_id[str(i['_id'])] = node
         node.setText(0, i['title'])
         if 'begin' in i:
             # node.setText(1, i['begin'].strftime('%Y-%m-%d %H:%M'))
@@ -470,7 +470,7 @@ class Ui_MainWindow(object):
             self.item['hide_finish'] = 0
             # _id = todolist.insert_one(self.item).inserted_id
             _id = todolist.insert_one(self.item)
-            item_id.append((node, str(_id)))
+            item_id[str(_id)] = node
             if self.item['is_finish'] == 0:
                 self.set_gray(node, False)
             elif self.item['is_finish'] == 1:
@@ -573,6 +573,7 @@ class Ui_MainWindow(object):
         # todolist.delete_one({'_id': ObjectId(id)})
         todolist.delete_many({'parent_task': id})
         todolist.delete_one({'_id': id})
+        del item_id[id]
         if parent:
             # parent_id = ObjectId(parent)
             parent_id = parent
@@ -770,7 +771,7 @@ class Ui_MainWindow(object):
 
 class MyWidget(QMainWindow):
     def closeEvent(self, event):
-        for (node, id) in item_id:
+        for id, node in item_id.items():
             if node.isExpanded():
                 # todolist.update_one({'_id': ObjectId(id), 'expand': {'$ne': 0}}, {'$set': {'expand': 1}})
                 todolist.update_one({'_id': id, 'expand': ['$ne', 0]}, ['$set', {'expand': 1}])
@@ -781,7 +782,7 @@ class MyWidget(QMainWindow):
         event.accept()
 
     def showEvent(self, event):
-        for (node, id) in item_id:
+        for id, node in item_id.items():
             if id is None:
                 continue
             res = todolist.find_one({'_id': id})

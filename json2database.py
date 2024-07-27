@@ -1,11 +1,18 @@
 import json
 import os
+import sys
+
+
+def get_resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 
 class Json2Database:
     def __init__(self):
-        if os.path.exists('./data.json'):
-            with open('./data.json', 'r', encoding='utf-8') as db:
+        if os.path.exists(get_resource_path('data.json')):
+            with open(get_resource_path('data.json'), 'r', encoding='utf-8') as db:
                 self.data = json.load(db)
         else:
             self.data = {'max': 0}
@@ -229,5 +236,5 @@ class Json2Database:
             return False
 
     def save(self):
-        with open("./data.json", "w") as f:
+        with open(get_resource_path('data.json'), "w") as f:
             json.dump(self.data, f)

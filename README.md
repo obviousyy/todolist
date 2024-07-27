@@ -6,7 +6,7 @@
 
 ## 1.数据库
 
-最新版使用json文件存储，不需要数据库，原本使用mongodb可以使用database2json.py生成带原本数据的json文件，打包后将data.json放到exe同级目录即可，直接运行也会自动生成空文件。
+最新版使用json文件存储，不需要数据库，原本使用mongodb可以使用database2json.py生成带原本数据的json文件，打包后将data.json放到`_internal`文件夹即可，直接运行也会自动生成空文件。
 
 使用的是mongodb，数据库名为todolist，表名为todolist，默认是自动连接本地数据库且无账号密码，自己建数据库和表。
 文档格式示例如下：（建议使用软件内操作不要自己更改数据库内的数据）
