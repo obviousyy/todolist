@@ -73,6 +73,31 @@ class CustomTreeWidget(QtWidgets.QTreeWidget):
         it = self.move_item
         # _id = ObjectId(get_id(it))
         _id = get_id(it)
+        old_parent_id = get_id(self.old_parent)
+        if old_parent_id:
+            # parent_id = ObjectId(old_parent_id)
+            parent_id = old_parent_id
+            # todolist.update_one({'_id': parent_id}, {'$pull': {'subtask': _id}})
+            todolist.update_one({'_id': parent_id}, ['$pull', {'subtask': _id}])
+            # subtask = todolist.find_one({'_id': parent_id}, {'_id': 0, 'subtask': 1})
+            subtask = todolist.find_one({'_id': parent_id})
+            if len(subtask['subtask']) == 0:
+                # todolist.update_one({'_id': parent_id}, {'$unset': {'subtask': ""}})
+                todolist.update_one({'_id': parent_id}, ['$unset', ['subtask']])
+                self.old_parent.setCheckState(0, Qt.Unchecked)
+            elif self.old_parent.checkState(0) == Qt.Unchecked or self.old_parent.checkState(0) == Qt.Checked \
+                    or self.old_parent.checkState(0) == Qt.PartiallyChecked and it.checkState(0) == Qt.Unchecked:
+                pass
+            else:
+                # subtask = todolist.find({'_id': {'$in': subtask['subtask']}}, {'is_finish': 1})
+                subtask = todolist.find({'_id': subtask['subtask']})
+                all_no_finish = True
+                for sub in subtask:
+                    if sub['is_finish'] != -1:
+                        all_no_finish = False
+                        break
+                if all_no_finish:
+                    self.old_parent.setCheckState(0, Qt.Unchecked)
         new_parent = self.itemAt(event.pos())
         new_parent_id = get_id(new_parent)
         if new_parent_id:
@@ -106,31 +131,6 @@ class CustomTreeWidget(QtWidgets.QTreeWidget):
             super().dropEvent(event)
             # todolist.update_one({'_id': _id}, {'$unset': {'parent_task': ""}})
             todolist.update_one({'_id': _id}, ['$unset', ['parent_task']])
-        old_parent_id = get_id(self.old_parent)
-        if old_parent_id:
-            # parent_id = ObjectId(old_parent_id)
-            parent_id = old_parent_id
-            # todolist.update_one({'_id': parent_id}, {'$pull': {'subtask': _id}})
-            todolist.update_one({'_id': parent_id}, ['$pull', {'subtask': _id}])
-            # subtask = todolist.find_one({'_id': parent_id}, {'_id': 0, 'subtask': 1})
-            subtask = todolist.find_one({'_id': parent_id})
-            if len(subtask['subtask']) == 0:
-                # todolist.update_one({'_id': parent_id}, {'$unset': {'subtask': ""}})
-                todolist.update_one({'_id': parent_id}, ['$unset', ['subtask']])
-                self.old_parent.setCheckState(0, Qt.Unchecked)
-            elif self.old_parent.checkState(0) == Qt.Unchecked or self.old_parent.checkState(0) == Qt.Checked \
-                    or self.old_parent.checkState(0) == Qt.PartiallyChecked and it.checkState(0) == Qt.Unchecked:
-                pass
-            else:
-                # subtask = todolist.find({'_id': {'$in': subtask['subtask']}}, {'is_finish': 1})
-                subtask = todolist.find({'_id': subtask['subtask']})
-                all_no_finish = True
-                for sub in subtask:
-                    if sub['is_finish'] != -1:
-                        all_no_finish = False
-                        break
-                if all_no_finish:
-                    self.old_parent.setCheckState(0, Qt.Unchecked)
 
 
 item_id = dict()
