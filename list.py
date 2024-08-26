@@ -571,9 +571,12 @@ class Ui_MainWindow(object):
         # mysql.delete_point(id)
         # todolist.delete_many({'parent_task': ObjectId(id)})
         # todolist.delete_one({'_id': ObjectId(id)})
+        subtask = todolist.find({'parent_task': id})
         todolist.delete_many({'parent_task': id})
         todolist.delete_one({'_id': id})
         del item_id[id]
+        for item in subtask:
+            del item_id[item['_id']]
         if parent:
             # parent_id = ObjectId(parent)
             parent_id = parent

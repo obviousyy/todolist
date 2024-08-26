@@ -162,11 +162,11 @@ class Json2Database:
                     if parent not in data:
                         data[parent] = dict()
                     s = set(data[parent][child])
-                    s.update(value)
+                    s.add(value)
                     data[parent][child] = list(s)
                 else:
                     s = set(data[key])
-                    s.update(value)
+                    s.add(value)
                     data[key] = list(s)
         elif new[0] == '$pull':
             for (key, value) in new[1].items():
