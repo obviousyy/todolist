@@ -649,11 +649,18 @@ class Ui_MainWindow(object):
                         self.treeWidget.blockSignals(True)
                         node.setCheckState(0, Qt.PartiallyChecked)
                         self.treeWidget.blockSignals(False)
-                        # todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
-                        todolist.update_one({'_id': id}, ['$set', {'is_finish': 0}])
-                        if result['cycle']['total_times'] != 0 and result['cycle']['finish_times'] == result['cycle']['total_times']:
+                        if result['cycle']['finish_times'] == result['cycle']['total_times']:
+                            # todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': 0}})
+                            todolist.update_one({'_id': id}, ['$set', {'is_finish': 0}])
                             self.set_gray(node, False)
+                        else:
+                            todolist.update_one({'_id': id}, ['$set', {'is_finish': -1}])
                     else:
+                        if result['cycle']['total_times'] == 0:
+                            self.set_gray(node, False)
+                            self.treeWidget.blockSignals(True)
+                            node.setCheckState(0, Qt.Unchecked)
+                            self.treeWidget.blockSignals(False)
                         # todolist.update_one({'_id': ObjectId(id)}, {'$set': {'is_finish': -1}})
                         todolist.update_one({'_id': id}, ['$set', {'is_finish': -1}])
                 else:
